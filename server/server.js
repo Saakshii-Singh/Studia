@@ -1,109 +1,143 @@
 const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
 const http = require("http");
-
 const { Server } = require("socket.io");
+const cors = require("cors");
+require("dotenv").config();
 
+// Configuration & Database connection
 const connectDB = require("./config/db");
 
+// Routes Imports
+const authRoutes = require("./routes/authRoutes");
+const roomRoutes = require("./routes/roomRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const studyRoutes = require("./routes/studyRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+
+// Database Models for Sockets logging
 const Message = require("./models/Message");
 
-dotenv.config();
-
+// Initialize Express & Create HTTP Server
 const app = express();
-
-// Connect MongoDB
-connectDB();
-
-// Middlewares
-app.use(cors());
-
-app.use(express.json());
-
-// Routes
-app.use(
-  "/api/auth",
-  require("./routes/authRoutes")
-);
-
-app.use(
-  "/api/rooms",
-  require("./routes/roomRoutes")
-);
-
-app.use(
-  "/api/messages",
-  require("./routes/messageRoutes")
-);
-
-// Test Route
-app.get("/", (req, res) => {
-  res.send("API Running");
-});
-
-// Create HTTP server
 const server = http.createServer(app);
 
-// Socket.IO setup
+// Initialize Socket.io with CORS enabled
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "*",
+    methods: ["GET", "POST"],
   },
 });
 
-// Socket connection
-const onlineUsers = {};
+// Middlewares
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Connect to MongoDB
+connectDB();
+
+// API Endpoints
+app.use("/api/auth", authRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/study", studyRoutes);
+app.use("/api/tasks", taskRoutes);
+
+// --- Real-time Co-Studying Rooms Sockets Engine ---
+// In-Memory state keeping track of active co-studiers in each room
+// Structure: { roomId: { socketId: { socketId, nickname, focus, xp, avatar, joinedAt } } }
+const activeRooms = {};
+
 io.on("connection", (socket) => {
-  console.log("User Connected");
+  console.log(`Websocket client connected: ${socket.id}`);
 
-  // Join room
-socket.on("join-room", (data) => {
-  const { roomId, username } = data;
+  // 1. Join a Co-Studying Room
+  socket.on("join_study_room", async ({ room, nickname, focus, xp, avatar }) => {
+    // Make sure the socket leaves any previously joined study rooms to prevent double logging
+    const rooms = Array.from(socket.rooms);
+    rooms.forEach((r) => {
+      if (r !== socket.id) {
+        socket.leave(r);
+        // Remove from old room records
+        if (activeRooms[r] && activeRooms[r][socket.id]) {
+          delete activeRooms[r][socket.id];
+          // Broadcast updated list to the old room
+          io.to(r).emit("room_users_list", Object.values(activeRooms[r]));
+        }
+      }
+    });
 
-  socket.join(roomId);
+    // Join the new socket room
+    socket.join(room);
 
-  if (!onlineUsers[roomId]) {
-    onlineUsers[roomId] = [];
-  }
+    // Initialize room container if empty
+    if (!activeRooms[room]) {
+      activeRooms[room] = {};
+    }
 
-  onlineUsers[roomId].push(username);
+    // Save active co-studier status
+    activeRooms[room][socket.id] = {
+      socketId: socket.id,
+      nickname: nickname || "Guest Scholar",
+      focus: focus || "Studying... 📚",
+      xp: xp || 0,
+      avatar: avatar || "violet",
+      joinedAt: new Date(),
+    };
 
-  io.to(roomId).emit(
-    "online-users",
-    onlineUsers[roomId]
-  );
+    console.log(`User "${nickname}" joined co-study room: ${room}`);
 
-  console.log(`${username} joined ${roomId}`);
-});
+    // Broadcast the updated list of students in the room to everyone inside
+    io.to(room).emit("room_users_list", Object.values(activeRooms[room]));
+  });
 
-  // Send message
-  socket.on("send-message", async (data) => {
-    try {
-      // Save message in MongoDB
-      await Message.create({
-        roomId: data.roomId,
-        username: data.username,
-        text: data.text,
-      });
-
-      // Emit realtime message
-      io.to(data.roomId).emit(
-        "receive-message",
-        data
-      );
-    } catch (error) {
-      console.log(error);
+  // 2. Update Focus Status (e.g. changing status message on the fly)
+  socket.on("update_focus_status", ({ room, focus }) => {
+    if (activeRooms[room] && activeRooms[room][socket.id]) {
+      activeRooms[room][socket.id].focus = focus;
+      // Broadcast updated list
+      io.to(room).emit("room_users_list", Object.values(activeRooms[room]));
     }
   });
 
-  // Disconnect
+  // 3. Room Chat Messages
+  socket.on("send_message", async ({ roomId, username, text }) => {
+    try {
+      // Save the message permanently to the database
+      const message = await Message.create({
+        roomId,
+        username,
+        text,
+      });
+      // Broadcast the saved message with its timestamps to everyone in the room
+      io.to(roomId).emit("new_message", message);
+    } catch (err) {
+      console.error("Error creating websocket message:", err.message);
+    }
+  });
+
+  // 4. Handle Disconnecting
   socket.on("disconnect", () => {
-    console.log("User Disconnected");
+    console.log(`Websocket client disconnected: ${socket.id}`);
+    // Find what room the student was in and remove them
+    for (const room in activeRooms) {
+      if (activeRooms[room][socket.id]) {
+        delete activeRooms[room][socket.id];
+        // Broadcast the updated student list to let others know they left
+        io.to(room).emit("room_users_list", Object.values(activeRooms[room]));
+        break;
+      }
+    }
   });
 });
 
-// Start server
-server.listen(5000, () => {
-  console.log("Server is running");
+// Server check route
+app.get("/", (req, res) => {
+  res.send("Studia co-studying MERN server is running smoothly! 🎓🚀");
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
