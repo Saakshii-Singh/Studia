@@ -1,17 +1,18 @@
-import {BrowserRouter,Routes,Route} from 'react-router-dom';
-
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Room from './pages/Room';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./Pages/Home";       // Maps to our stunning landing page
+import Login from "./Pages/Login";
+import Register from "./Pages/Register";
+import Dashboard from "./Pages/Dashboard"; // Maps to our group finder sanctum
+import Room from "./Pages/Room";
 
 function App() {
-  return(
+  return (
     <BrowserRouter>
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      {/* Container wraps full viewport without padding/centering conflicts */}
+      <div className="min-h-screen w-full bg-background text-foreground overflow-x-hidden">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/room/:id" element={<Room />} />

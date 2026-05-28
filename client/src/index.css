@@ -1,7 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@theme {
+  --color-background: #04010a;
+  --color-foreground: #f4f2f9;
+  --color-card: #0d0621;
+  --color-card-foreground: #f4f2f9;
+  --color-primary: #8b5cf6;
+  --color-primary-foreground: #04010a;
+  --color-accent: #06b6d4;
+  --color-accent-foreground: #04010a;
+  --color-border: rgba(139, 92, 246, 0.15);
+  --color-input: #0e0724;
+  --color-muted: #130a2c;
+  --color-muted-foreground: #a69cb8;
+
+  --font-display: "Outfit", "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
+
+  --shadow-soft: 0 8px 32px 0 rgba(139, 92, 246, 0.05);
+  --shadow-glow: 0 0 25px -3px rgba(139, 92, 246, 0.45);
+  --shadow-cyanGlow: 0 0 25px -3px rgba(6, 182, 212, 0.45);
+}
+
+@layer base {
+  body {
+    background-color: #04010a;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+    color: #f4f2f9;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Frosted glass premium panels */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(20, 10, 48, 0.45) 0%, rgba(10, 5, 26, 0.65) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.glass-panel-cyan {
+  background: linear-gradient(135deg, rgba(20, 10, 48, 0.45) 0%, rgba(10, 5, 26, 0.65) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dynamic glow button gradient */
+.bg-gradient-neon {
+  background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+  transition: all 0.3s ease;
+}
+
+.bg-gradient-neon:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 25px 0 rgba(6, 182, 212, 0.35);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
+}
+
+/* Animated floating backdrop bubbles */
+.bg-glow-bubble {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  mix-blend-mode: screen;
+}
+
+/* Premium Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #04010a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%);
+  border-radius: 99px;
+  border: 2px solid #04010a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.55) 0%, rgba(6, 182, 212, 0.55) 100%);
 }
