@@ -28,12 +28,14 @@ export default function Room() {
   const [guestNick, setGuestNick] = useState("");
 
   // Ambient sound system refs & playing states
-  const [playingAmbient, setPlayingAmbient] = useState({ rain: false, lofi: false, cafe: false });
-  const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3 });
+  const [playingAmbient, setPlayingAmbient] = useState({ rain: false, lofi: false, cafe: false, piano: false, fire: false });
+  const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano: 0.3, fire: 0.3 });
 
   const rainRef = useRef(null);
   const lofiRef = useRef(null);
   const cafeRef = useRef(null);
+  const pianoRef = useRef(null);
+  const fireRef = useRef(null);
 
   useEffect(() => {
     // 1. Fetch Room Name
@@ -107,6 +109,8 @@ export default function Room() {
       if (rainRef.current) rainRef.current.pause();
       if (lofiRef.current) lofiRef.current.pause();
       if (cafeRef.current) cafeRef.current.pause();
+      if (pianoRef.current) pianoRef.current.pause();
+      if (fireRef.current) fireRef.current.pause();
     };
   }, [id]);
 
@@ -178,6 +182,8 @@ export default function Room() {
     if (sound === "rain") audioRef = rainRef;
     if (sound === "lofi") audioRef = lofiRef;
     if (sound === "cafe") audioRef = cafeRef;
+    if (sound === "piano") audioRef = pianoRef;
+    if (sound === "fire") audioRef = fireRef;
 
     if (audioRef.current) {
       if (isPlaying) {
@@ -195,6 +201,8 @@ export default function Room() {
     if (sound === "rain") audioRef = rainRef;
     if (sound === "lofi") audioRef = lofiRef;
     if (sound === "cafe") audioRef = cafeRef;
+    if (sound === "piano") audioRef = pianoRef;
+    if (sound === "fire") audioRef = fireRef;
 
     if (audioRef.current) {
       audioRef.current.volume = val;
@@ -219,6 +227,8 @@ export default function Room() {
       <audio ref={rainRef} src="https://assets.mixkit.co/active_storage/sfx/2433/2433-500.wav" loop />
       <audio ref={lofiRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" loop />
       <audio ref={cafeRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" loop />
+      <audio ref={pianoRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" loop />
+      <audio ref={fireRef} src="https://assets.mixkit.co/active_storage/sfx/2432/2432-500.wav" loop />
 
       {/* Header details bar */}
       <div className="w-full max-w-6xl px-6 flex items-center justify-between border-b border-border/40 pb-4.5 mb-6">
@@ -340,6 +350,64 @@ export default function Room() {
                     step="0.1"
                     value={volumes.cafe}
                     onChange={(e) => handleVolumeChange("cafe", parseFloat(e.target.value))}
+                    className="flex-1 h-1 bg-border rounded-full appearance-none cursor-pointer accent-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Classical Piano */}
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">Classic Piano 🎹</span>
+                  <button
+                    onClick={() => toggleAmbient("piano")}
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      playingAmbient.piano
+                        ? "bg-accent/20 border-accent text-accent"
+                        : "bg-muted hover:bg-border text-muted-foreground border-border"
+                    }`}
+                  >
+                    {playingAmbient.piano ? "Pause" : "Play"}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volumes.piano}
+                    onChange={(e) => handleVolumeChange("piano", parseFloat(e.target.value))}
+                    className="flex-1 h-1 bg-border rounded-full appearance-none cursor-pointer accent-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Crackling Fireplace */}
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white">Cozy Fireplace 🔥</span>
+                  <button
+                    onClick={() => toggleAmbient("fire")}
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      playingAmbient.fire
+                        ? "bg-accent/20 border-accent text-accent"
+                        : "bg-muted hover:bg-border text-muted-foreground border-border"
+                    }`}
+                  >
+                    {playingAmbient.fire ? "Pause" : "Play"}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volumes.fire}
+                    onChange={(e) => handleVolumeChange("fire", parseFloat(e.target.value))}
                     className="flex-1 h-1 bg-border rounded-full appearance-none cursor-pointer accent-accent"
                   />
                 </div>
