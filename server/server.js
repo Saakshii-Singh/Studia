@@ -101,6 +101,19 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 2.5. Sync Pomodoro Timer Group state across all connected clients in the study room
+  socket.on("timer_sync_control", ({ room, action, minutes, seconds, isBreak, category }) => {
+    socket.to(room).emit("timer_sync_event", { action, minutes, seconds, isBreak, category });
+  });
+
+  socket.on("timer_request_state", ({ room }) => {
+    socket.to(room).emit("timer_need_state", { requesterId: socket.id });
+  });
+
+  socket.on("timer_provide_state", ({ room, requesterId, minutes, seconds, isActive, isBreak, category }) => {
+    io.to(requesterId).emit("timer_sync_event", { action: "state_reply", minutes, seconds, isActive, isBreak, category });
+  });
+
   // 3. Room Chat Messages
   socket.on("send_message", async ({ roomId, username, text }) => {
     try {

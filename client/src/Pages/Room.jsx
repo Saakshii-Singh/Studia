@@ -209,6 +209,49 @@ export default function Room() {
     }
   };
 
+  const applySoundPreset = (presetName) => {
+    // 1. Pause and reset all active audio streams first
+    const refs = [rainRef, lofiRef, cafeRef, pianoRef, fireRef];
+    refs.forEach(ref => {
+      if (ref.current) {
+        ref.current.pause();
+        ref.current.currentTime = 0;
+      }
+    });
+
+    const newPlaying = { rain: false, lofi: false, cafe: false, piano: false, fire: false };
+    const newVols = { ...volumes };
+
+    if (presetName === "cafe") {
+      newPlaying.rain = true;
+      newPlaying.cafe = true;
+      newVols.rain = 0.4;
+      newVols.cafe = 0.5;
+
+      if (rainRef.current) { rainRef.current.volume = 0.4; rainRef.current.play().catch(e => console.log(e)); }
+      if (cafeRef.current) { cafeRef.current.volume = 0.5; cafeRef.current.play().catch(e => console.log(e)); }
+    } else if (presetName === "library") {
+      newPlaying.lofi = true;
+      newPlaying.piano = true;
+      newVols.lofi = 0.4;
+      newVols.piano = 0.25;
+
+      if (lofiRef.current) { lofiRef.current.volume = 0.4; lofiRef.current.play().catch(e => console.log(e)); }
+      if (pianoRef.current) { pianoRef.current.volume = 0.25; pianoRef.current.play().catch(e => console.log(e)); }
+    } else if (presetName === "hearth") {
+      newPlaying.piano = true;
+      newPlaying.fire = true;
+      newVols.piano = 0.35;
+      newVols.fire = 0.4;
+
+      if (pianoRef.current) { pianoRef.current.volume = 0.35; pianoRef.current.play().catch(e => console.log(e)); }
+      if (fireRef.current) { fireRef.current.volume = 0.4; fireRef.current.play().catch(e => console.log(e)); }
+    }
+
+    setPlayingAmbient(newPlaying);
+    setVolumes(newVols);
+  };
+
   // Avatar helper classes
   const getAvatarBg = (color) => {
     if (color === "violet") return "bg-primary text-white border-primary/20";
@@ -265,6 +308,31 @@ export default function Room() {
             <div className="flex items-center gap-2 mb-4 border-b border-border/40 pb-3">
               <Music className="h-4.5 w-4.5 text-primary" />
               <h4 className="text-sm font-bold tracking-wider uppercase text-white">Focus Sounds</h4>
+            </div>
+
+            {/* Quick Presets Mixer Bar */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 flex-wrap">
+              <button
+                onClick={() => applySoundPreset("cafe")}
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                title="Rainy Café preset"
+              >
+                🌧️☕ Café
+              </button>
+              <button
+                onClick={() => applySoundPreset("library")}
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                title="Library Beats preset"
+              >
+                📚🎧 Library
+              </button>
+              <button
+                onClick={() => applySoundPreset("hearth")}
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                title="Cozy Hearth preset"
+              >
+                🔥🎹 Hearth
+              </button>
             </div>
 
             <div className="space-y-4">

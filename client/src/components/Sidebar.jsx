@@ -2,9 +2,26 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import API from "../services/api";
 
+const CATEGORIES = [
+  { value: "General", label: "📋 General" },
+  { value: "Coding", label: "💻 Coding" },
+  { value: "Math", label: "📐 Mathematics" },
+  { value: "Science", label: "🔬 Science" },
+  { value: "Writing", label: "📝 Writing" },
+  { value: "Languages", label: "🗣️ Languages" },
+];
+
+const PRIORITIES = [
+  { value: "Low", label: "🟢 Low" },
+  { value: "Medium", label: "🟡 Medium" },
+  { value: "High", label: "🔴 High" },
+];
+
 export default function Sidebar() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("General");
+  const [priority, setPriority] = useState("Medium");
   const [isGuest, setIsGuest] = useState(true);
 
   useEffect(() => {
@@ -46,7 +63,11 @@ export default function Sidebar() {
 
     if (!isGuest) {
       try {
-        const res = await API.post("/tasks", { title: title.trim() });
+        const res = await API.post("/tasks", {
+          title: title.trim(),
+          category,
+          priority,
+        });
         setTasks((prev) => [res.data, ...prev]);
       } catch (err) {
         console.error("Failed to add cloud task:", err.message);
@@ -56,12 +77,16 @@ export default function Sidebar() {
         _id: String(Date.now()),
         title: title.trim(),
         completed: false,
+        category,
+        priority,
       };
       const updated = [newTask, ...tasks];
       setTasks(updated);
       localStorage.setItem("local_tasks", JSON.stringify(updated));
     }
     setTitle("");
+    setCategory("General");
+    setPriority("Medium");
   };
 
   const handleToggleTask = async (id, completed) => {
@@ -96,6 +121,17 @@ export default function Sidebar() {
     }
   };
 
+  const getPriorityBadgeStyle = (p) => {
+    if (p === "High") return "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+    if (p === "Low") return "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20";
+    return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+  };
+
+  const getCategoryEmoji = (cat) => {
+    const found = CATEGORIES.find(c => c.value === cat);
+    return found ? found.label.split(" ")[0] : "📋";
+  };
+
   return (
     <div className="glass-panel p-5 rounded-3xl flex flex-col h-full border-border/40 shadow-soft">
       {/* Header */}
@@ -105,20 +141,49 @@ export default function Sidebar() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Add focus task..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 px-3.5 py-2 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent transition-all"
-        />
-        <button
-          type="submit"
-          className="p-2.5 bg-accent hover:scale-[1.02] active:scale-95 text-background rounded-xl shadow-cyanGlow cursor-pointer transition-transform"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+      <form onSubmit={handleAddTask} className="flex flex-col gap-2 mb-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Add focus task..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 px-3.5 py-2.5 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent transition-all"
+          />
+          <button
+            type="submit"
+            className="p-3 bg-accent hover:scale-[1.02] active:scale-95 text-background rounded-xl shadow-cyanGlow cursor-pointer transition-transform"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Priority & Category Selectors */}
+        <div className="flex gap-2 w-full">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="flex-1 px-2 py-2 rounded-xl bg-input/70 text-white border border-border/40 outline-none text-[10px] cursor-pointer"
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat.value} value={cat.value} className="bg-background text-white">
+                {cat.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            className="flex-1 px-2 py-2 rounded-xl bg-input/70 text-white border border-border/40 outline-none text-[10px] cursor-pointer"
+          >
+            {PRIORITIES.map(pri => (
+              <option key={pri.value} value={pri.value} className="bg-background text-white">
+                {pri.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </form>
 
       {/* Tasks checklist */}
@@ -131,22 +196,34 @@ export default function Sidebar() {
           tasks.map((task) => (
             <div
               key={task._id}
-              className="flex items-center justify-between p-3.5 rounded-xl bg-muted/40 border border-border/30 hover:border-border transition-all"
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 hover:border-border transition-all"
             >
               <div 
                 onClick={() => handleToggleTask(task._id, task.completed)}
-                className="flex items-center gap-2.5 cursor-pointer flex-1 mr-2"
+                className="flex items-start gap-2.5 cursor-pointer flex-1 mr-2 min-w-0"
               >
                 {task.completed ? (
-                  <CheckCircle2 className="h-4.5 w-4.5 text-accent shrink-0 fill-accent/15" />
+                  <CheckCircle2 className="h-4.5 w-4.5 text-accent shrink-0 fill-accent/15 mt-0.5" />
                 ) : (
-                  <Circle className="h-4.5 w-4.5 text-muted-foreground shrink-0" />
+                  <Circle className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
                 )}
-                <span className={`text-xs font-semibold select-none break-all leading-normal ${
-                  task.completed ? "line-through text-muted-foreground" : "text-white"
-                }`}>
-                  {task.title}
-                </span>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className={`text-xs font-semibold select-none break-words leading-normal ${
+                    task.completed ? "line-through text-muted-foreground" : "text-white"
+                  }`}>
+                    {task.title}
+                  </span>
+                  
+                  {/* Category & Priority Badge display */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-plum">
+                      {getCategoryEmoji(task.category)} {task.category}
+                    </span>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide ${getPriorityBadgeStyle(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                  </div>
+                </div>
               </div>
               
               <button

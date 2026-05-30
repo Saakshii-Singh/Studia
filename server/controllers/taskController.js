@@ -14,7 +14,7 @@ exports.getTasks = async (req, res) => {
 // @desc    Create a new task
 // @route   POST /api/tasks
 exports.createTask = async (req, res) => {
-  const { title } = req.body;
+  const { title, category, priority } = req.body;
 
   try {
     if (!title || title.trim() === "") {
@@ -24,6 +24,8 @@ exports.createTask = async (req, res) => {
     const task = await Task.create({
       userId: req.user._id,
       title: title.trim(),
+      category: category || "General",
+      priority: priority || "Medium",
     });
 
     res.status(201).json(task);
@@ -35,7 +37,7 @@ exports.createTask = async (req, res) => {
 // @desc    Update a task status or title
 // @route   PUT /api/tasks/:id
 exports.updateTask = async (req, res) => {
-  const { title, completed } = req.body;
+  const { title, completed, category, priority } = req.body;
 
   try {
     const task = await Task.findOne({ _id: req.params.id, userId: req.user._id });
@@ -45,6 +47,8 @@ exports.updateTask = async (req, res) => {
 
     if (title !== undefined) task.title = title.trim();
     if (completed !== undefined) task.completed = !!completed;
+    if (category !== undefined) task.category = category;
+    if (priority !== undefined) task.priority = priority;
 
     await task.save();
     res.json(task);
