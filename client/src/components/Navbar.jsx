@@ -34,11 +34,8 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 w-full h-16 border-b border-border bg-background/55 backdrop-blur-md z-50 flex items-center justify-between px-8 shadow-soft">
       {/* Brand logo */}
       <Link to="/" className="flex items-center gap-2 group">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-neon text-white shadow-glow transition-transform group-hover:scale-105">
-          <BookOpen className="h-4 w-4" />
-        </span>
-        <span className="font-display text-xl font-black tracking-tight text-white">
-          Studia<span className="text-accent">.</span>
+        <span className="font-display text-2xl font-bold tracking-tight text-white hover:text-primary transition-colors">
+          Studia
         </span>
       </Link>
 
