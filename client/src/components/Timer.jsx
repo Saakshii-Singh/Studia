@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Play, Pause, RotateCcw, Coffee, Zap, Award, CheckCircle, Sparkles, X } from "lucide-react";
+import { Play, Pause, RotateCcw, Coffee, Zap, Award, CheckCircle, Sparkles, X, Lock, Unlock, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../services/api";
 import socket from "../socket/socket";
@@ -20,36 +20,56 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [modalDetails, setModalDetails] = useState({ duration: 0, xp: 0, level: 1 });
 
+  // Deep Focus Lockdown Mode States
+  const [lockdownMode, setLockdownMode] = useState(false);
+  const [showDistractionModal, setShowDistractionModal] = useState(false);
+  const [distractionsCount, setDistractionsCount] = useState(0);
+  const [deductedXp, setDeductedXp] = useState(0);
+
   const intervalRef = useRef(null);
 
-  // Web Audio API Celebrate Chime (synthetic high-frequency chord)
-  const playChime = (isLevelUp = false) => {
+  // Web Audio API Chime Synth
+  const playChime = (type = "session") => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       const ctx = new AudioContext();
       
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+      if (type === "warning") {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(140, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.2);
+      } else {
+        const isLevelUp = type === "levelup" || type === true;
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
-      osc1.type = "sine";
-      osc1.frequency.setValueAtTime(isLevelUp ? 880.00 : 587.33, ctx.currentTime); // A5 or D5
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(isLevelUp ? 880.00 : 587.33, ctx.currentTime);
 
-      osc2.type = "sine";
-      osc2.frequency.setValueAtTime(isLevelUp ? 1318.51 : 880.00, ctx.currentTime); // E6 or A5
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(isLevelUp ? 1318.51 : 880.00, ctx.currentTime);
 
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
 
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(ctx.destination);
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(ctx.destination);
 
-      osc1.start();
-      osc2.start();
-      osc1.stop(ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
-      osc2.stop(ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
+        osc1.start();
+        osc2.start();
+        osc1.stop(ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
+        osc2.stop(ctx.currentTime + (isLevelUp ? 2.5 : 1.8));
+      }
     } catch (e) {
       console.log("Audio chime playback blocked:", e);
     }
@@ -135,6 +155,115 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
 
     return () => clearInterval(intervalRef.current);
   }, [isActive, seconds, minutes, isBreak, customWorkTime]);
+
+  // --- Deep Focus Lockdown Core Logic ---
+  useEffect(() => {
+    if (!isActive || isBreak || !lockdownMode) return;
+
+    // 1. Enter Fullscreen automatically if possible
+    const enterFullscreen = async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.warn("Fullscreen request blocked by browser:", err.message);
+      }
+    };
+    enterFullscreen();
+
+    // 2. Distraction Penalty Handler
+    const handleDistraction = async () => {
+      // Pause the timer
+      setIsActive(false);
+      
+      // Play a warning buzzer
+      playChime("warning");
+
+      // Increment distractions count
+      setDistractionsCount((prev) => prev + 1);
+
+      // Trigger gamified XP deduction penalty (e.g. deduct 10 XP)
+      let localDeduction = 10;
+      setDeductedXp(localDeduction);
+      
+      try {
+        // Broadcast pause to other room users
+        socket.emit("timer_sync_control", {
+          room: roomId,
+          action: "pause",
+          minutes,
+          seconds,
+          isBreak,
+          category,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+
+      // Update XP locally
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userObj = JSON.parse(storedUser);
+          userObj.xp = Math.max(0, (userObj.xp || userObj.experience || 0) - 10);
+          userObj.experience = userObj.xp;
+          userObj.level = Math.floor(Math.sqrt(userObj.xp / 100)) + 1;
+          localStorage.setItem("user", JSON.stringify(userObj));
+          window.dispatchEvent(new Event("hh_login_state_change"));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Exit fullscreen and show the beautiful warning modal
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setShowDistractionModal(true);
+    };
+
+    // 3. Document Visibility and Window Blur Listeners
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleDistraction();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      handleDistraction();
+    };
+
+    const handleFullscreenChange = () => {
+      // If user voluntarily exits fullscreen, count it as a distraction
+      if (!document.fullscreenElement && isActive && !isBreak && lockdownMode) {
+        handleDistraction();
+      }
+    };
+
+    // 4. Browser Exit Prevention (beforeunload)
+    const handleBeforeUnload = (e) => {
+      const msg = "Deep Focus Lockdown is active! Leaving this page will break your focus block and penalize your XP.";
+      e.returnValue = msg;
+      return msg;
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isActive, isBreak, lockdownMode, roomId, minutes, seconds, category]);
 
   const saveStudySession = async (mins) => {
     try {
@@ -296,6 +425,37 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         </button>
       </div>
 
+      {/* Deep Focus Lockdown Toggle */}
+      <button
+        onClick={() => {
+          if (!isActive) {
+            setLockdownMode(!lockdownMode);
+          }
+        }}
+        disabled={isActive}
+        className={`mt-4 w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+          isActive 
+            ? "opacity-50 cursor-not-allowed" 
+            : ""
+        } ${
+          lockdownMode
+            ? "bg-red-500/10 border-red-500/30 text-red-400 shadow-glow"
+            : "bg-muted/40 border-border/30 text-muted-foreground hover:text-white"
+        }`}
+      >
+        {lockdownMode ? (
+          <>
+            <Lock className="h-3.5 w-3.5 animate-pulse text-red-400" />
+            <span>Lockdown Armed 🔒</span>
+          </>
+        ) : (
+          <>
+            <Unlock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Enable Deep Focus Lock</span>
+          </>
+        )}
+      </button>
+
       {/* Custom Duration Overlay */}
       {showSettings && (
         <div className="glass-panel p-4 rounded-xl absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card/95">
@@ -418,6 +578,48 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
                 className="w-full bg-gradient-neon py-3.5 rounded-xl font-black uppercase tracking-widest text-xs text-white shadow-cyanGlow hover:scale-[1.01] active:scale-95 transition-all cursor-pointer z-10"
               >
                 Keep Leveling Up!
+              </button>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 3. Distraction Detected Warning Modal */}
+        {showDistractionModal && (
+          <div className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.9 }}
+              className="glass-panel p-8 rounded-3xl w-full max-w-sm border-red-500/20 shadow-glow relative text-center flex flex-col items-center overflow-hidden"
+            >
+              <span className="grid h-16 w-16 place-items-center rounded-3xl bg-red-500/10 text-red-500 mb-6 shadow-glow animate-pulse">
+                <AlertTriangle className="h-8 w-8" />
+              </span>
+
+              <h2 className="text-2xl font-black tracking-tight text-white font-display uppercase tracking-widest text-red-400">
+                Focus Broken! ⚠️
+              </h2>
+
+              <p className="text-xs text-muted-foreground mt-3 max-w-[260px] leading-relaxed">
+                You switched tabs, exited fullscreen, or navigated away. The Deep Focus Lockdown protocol was violated.
+              </p>
+
+              <div className="my-6 p-4 rounded-2xl bg-red-500/5 border border-red-500/20 w-full text-left space-y-1.5 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Distractions this session</span>
+                  <strong className="text-red-400">{distractionsCount}</strong>
+                </div>
+                <div className="flex justify-between font-bold">
+                  <span>Penalty Deducted</span>
+                  <strong className="text-red-400">-{deductedXp} XP</strong>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowDistractionModal(false)}
+                className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs text-white transition-all cursor-pointer"
+              >
+                Re-enter Study Chambers
               </button>
             </motion.div>
           </div>
