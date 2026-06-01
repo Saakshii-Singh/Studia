@@ -40,7 +40,11 @@ export default function Login() {
       // Dispatch custom event to refresh the Navbar state instantly
       window.dispatchEvent(new Event("hh_login_state_change"));
       
-      navigate("/");
+      if (response.data.user && !response.data.user.isVerified) {
+        navigate("/verify");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
     } finally {

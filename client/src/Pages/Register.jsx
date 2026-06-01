@@ -60,11 +60,14 @@ export default function Register() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       
+      if (response.data.devCode) {
+        localStorage.setItem("dev_verification_code", response.data.devCode);
+      }
+
       // Notify Navbar
       window.dispatchEvent(new Event("hh_login_state_change"));
       
-      alert("Registration successful! Welcome to the co-study community.");
-      navigate("/");
+      navigate("/verify");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed. Try again.");
     } finally {
