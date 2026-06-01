@@ -1,7 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
-import { UserPlus, BookOpen, Key, Mail, User } from "lucide-react";
+import { UserPlus, BookOpen, Key, Mail, User, Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -12,6 +12,24 @@ export default function Register() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Live password complexity evaluations
+  const password = formData.password;
+  const hasMinLength = password.length >= 6;
+  const hasNumber = /\d/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  const strengthScore = (hasMinLength ? 1 : 0) + (hasNumber ? 1 : 0) + (hasSpecial ? 1 : 0);
+
+  const getStrengthLabel = () => {
+    if (!password) return { label: "", color: "bg-white/10", text: "text-muted-foreground" };
+    if (strengthScore === 1) return { label: "Weak 🔴", color: "bg-red-500", text: "text-red-400" };
+    if (strengthScore === 2) return { label: "Medium 🟡", color: "bg-amber-500", text: "text-amber-400" };
+    return { label: "Strong 🟢", color: "bg-emerald-500", text: "text-emerald-400" };
+  };
+
+  const strengthDetails = getStrengthLabel();
 
   const handleChange = (e) => {
     setFormData({
@@ -25,6 +43,11 @@ export default function Register() {
     e.preventDefault();
     if (!formData.username || !formData.email || !formData.password) {
       setError("Please fill out all fields.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
@@ -107,14 +130,59 @@ export default function Register() {
           <div className="relative">
             <Key className="absolute left-4 top-3.5 h-4.5 w-4.5 text-muted-foreground/60" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-3.5 text-muted-foreground/60 hover:text-white transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
           </div>
+
+          {/* Password Strength Meter */}
+          {formData.password && (
+            <div className="mt-1 flex flex-col gap-2 p-3.5 rounded-2xl bg-white/5 border border-white/5 text-[10px]">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-muted-foreground">Strength:</span>
+                <span className={`font-black ${strengthDetails.text}`}>{strengthDetails.label}</span>
+              </div>
+              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${strengthDetails.color}`}
+                  style={{ width: `${(strengthScore / 3) * 100}%` }}
+                />
+              </div>
+              
+              {/* Requirements checklist */}
+              <div className="flex flex-col gap-1.5 mt-1.5 text-muted-foreground font-bold text-[9px] uppercase tracking-wide">
+                <div className="flex items-center gap-1.5">
+                  <span className={hasMinLength ? "text-emerald-400" : "text-red-400"}>
+                    {hasMinLength ? "✔" : "✖"}
+                  </span>
+                  <span className={hasMinLength ? "text-emerald-400" : ""}>At least 6 characters</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={hasNumber ? "text-emerald-400" : "text-red-400"}>
+                    {hasNumber ? "✔" : "✖"}
+                  </span>
+                  <span className={hasNumber ? "text-emerald-400" : ""}>Contains a digit (0-9)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={hasSpecial ? "text-emerald-400" : "text-red-400"}>
+                    {hasSpecial ? "✔" : "✖"}
+                  </span>
+                  <span className={hasSpecial ? "text-emerald-400" : ""}>Contains a symbol (e.g. !, @, #)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
