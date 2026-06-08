@@ -5,13 +5,7 @@ import featurePeer from "../assets/feature-peer.jpg";
 import featureCommunity from "../assets/feature-community.jpg";
 import featureGamify from "../assets/feature-gamify.jpg";
 
-const stats = [
-  { num: "1M+", label: "community members" },
-  { num: "19M+", label: "study sessions" },
-  { num: "4M+", label: "study goals reached" },
-  { num: "215", label: "countries" },
-  { num: "4.8/5", label: "positive reviews" },
-];
+
 
 const discover = [
   { title: "Own Study Universe", desc: "Create your very own study room with atmospheric backgrounds, personal timers, and goals.", emoji: "🌌" },
@@ -52,7 +46,6 @@ const testimonials = [
   { title: "Thank you", body: "Yesterday I completed my one year in this community. So many study hours without even noticing them, just because I was focused with my study pals!" },
 ];
 
-const universities = ["MIT", "Harvard", "Stanford", "Yale", "Princeton", "Oxford", "Cambridge", "IIT Bombay", "NUS", "TU Delft", "LMU München", "King's College"];
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -72,11 +65,9 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <Nav user={user} />
       <Hero />
-      <Stats />
       <Discover />
       <Features />
       <Testimonials />
-      <Universities />
       <CTA />
       <Footer />
     </div>

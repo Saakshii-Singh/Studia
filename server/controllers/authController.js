@@ -2,6 +2,68 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+
+async function sendVerificationEmail(email, code) {
+  if (
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS
+  ) {
+    try {
+      const port = parseInt(process.env.SMTP_PORT || "465");
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: port,
+        secure: port === 465,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+        connectionTimeout: 5000,
+        socketTimeout: 5000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Studia Support" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Verify your Studia Account 📚",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2d9f3; border-radius: 16px; background-color: #f7f5fd;">
+            <h2 style="color: #8b5cf6; text-align: center;">Welcome to Studia! 📚</h2>
+            <p>Thank you for joining our community. To complete your account registration, please enter the following 6-digit verification code on the dashboard:</p>
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #130a2c; background-color: #fff; border: 2px dashed #8b5cf6; padding: 15px; margin: 20px 0; border-radius: 12px;">
+              ${code}
+            </div>
+            <p style="color: #a69cb8; font-size: 13px; text-align: center;">This code is valid for 10 minutes. If you did not request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`Verification email sent successfully to: ${email}`);
+      return true;
+    } catch (error) {
+      console.error(`Error sending email to ${email}:`, error.message);
+    }
+  }
+
+  // Fallback (or development helper): Log inside terminal with beautiful ANSI border
+  console.log(`
+┌────────────────────────────────────────────────────────┐
+│  📚 STUDIA EMAIL VERIFICATION SERVICE                  │
+├────────────────────────────────────────────────────────┤
+│  Recipient:  \x1b[35m${email.padEnd(41)}\x1b[0m │
+│  OTP Code:   \x1b[36m\x1b[1m${code}\x1b[0m (Expires in 10 minutes)     │
+├────────────────────────────────────────────────────────┤
+│  Copy the OTP above to verify your account in the UI.  │
+└────────────────────────────────────────────────────────┘
+`);
+  return false;
+}
 
 exports.register = async (req, res) => {
   try {
@@ -29,7 +91,7 @@ exports.register = async (req, res) => {
       isVerified: false
     });
 
-    console.log(`🌸 [DEV MODE] User Registered! OTP for ${email}: ${verificationCode}`);
+    const isRealEmailSent = await sendVerificationEmail(email, verificationCode);
 
     const token = jwt.sign(
       { id: user._id },
@@ -49,7 +111,7 @@ exports.register = async (req, res) => {
         xp: user.xp,
         isVerified: user.isVerified
       },
-      devCode: verificationCode
+      ...(!isRealEmailSent ? { devCode: verificationCode } : {})
     });
   } catch (error) {
     res.status(500).json({
@@ -183,11 +245,11 @@ exports.resendOTP = async (req, res) => {
     user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
-    console.log(`🌸 [DEV MODE] Fresh Verification OTP for ${email}: ${newCode}`);
+    const isRealEmailSent = await sendVerificationEmail(user.email, newCode);
 
     res.status(200).json({
       message: "A fresh verification code has been sent to your email.",
-      devCode: newCode
+      ...(!isRealEmailSent ? { devCode: newCode } : {})
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

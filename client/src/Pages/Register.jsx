@@ -62,6 +62,8 @@ export default function Register() {
       
       if (response.data.devCode) {
         localStorage.setItem("dev_verification_code", response.data.devCode);
+      } else {
+        localStorage.removeItem("dev_verification_code");
       }
 
       // Notify Navbar

@@ -153,6 +153,9 @@ export default function Verify() {
       if (res.data.devCode) {
         setDevCode(res.data.devCode);
         localStorage.setItem("dev_verification_code", res.data.devCode);
+      } else {
+        setDevCode("");
+        localStorage.removeItem("dev_verification_code");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to resend code.");
