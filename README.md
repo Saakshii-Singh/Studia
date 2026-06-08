@@ -1,5 +1,7 @@
 # Studia (FocusSphere) 📚✨
 
+🚀 **Live Deployment:** [studia-one.vercel.app](https://studia-one.vercel.app)
+
 Studia is a premium, real-time MERN stack co-studying suite designed to bring students together in focused virtual rooms. Say goodbye to isolation and hello to shared productivity with integrated Pomodoro clocks, real-time chat, ambient soundboards, and deep focus lockdown guards.
 
 ---
