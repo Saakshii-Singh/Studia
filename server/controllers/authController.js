@@ -25,6 +25,7 @@ async function sendVerificationEmail(email, code) {
         tls: {
           rejectUnauthorized: false,
         },
+           family: 4,
       });
 
       const mailOptions = {
