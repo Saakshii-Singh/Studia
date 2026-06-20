@@ -89,7 +89,6 @@ function Nav({ user }) {
           <a href="#how" className="hover:text-white">How Studia Works</a>
           <a href="#discover" className="hover:text-white">Design a Study Universe</a>
           <a href="#events" className="hover:text-white">Community events</a>
-          <a href="#about" className="hover:text-white">About</a>
         </nav>
         {user ? (
           <div className="relative">

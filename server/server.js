@@ -16,7 +16,19 @@ const taskRoutes = require("./routes/taskRoutes");
 
 // Database Models for Sockets logging
 const Message = require("./models/Message");
+// Inappropriate Words Filter Configuration
+const BANNED_WORDS = ["spam", "abuse", "hate", "idiot", "jerk"]; // Add any additional words you want to censor here
 
+function censorText(text) {
+  if (!text) return "";
+  let censored = text;
+  BANNED_WORDS.forEach((word) => {
+    // Matches the whole word case-insensitively and replaces it with asterisks
+    const regex = new RegExp(`\\b${word}\\b`, "gi");
+    censored = censored.replace(regex, "*".repeat(word.length));
+  });
+  return censored;
+}
 // Initialize Express & Create HTTP Server
 const app = express();
 const server = http.createServer(app);
@@ -115,13 +127,17 @@ io.on("connection", (socket) => {
   });
 
   // 3. Room Chat Messages
+  // 3. Room Chat Messages
   socket.on("send_message", async ({ roomId, username, text }) => {
     try {
-      // Save the message permanently to the database
+      // Apply the censorship filter first
+      const censoredText = censorText(text);
+
+      // Save the censored message permanently to the database
       const message = await Message.create({
         roomId,
         username,
-        text,
+        text: censoredText,
       });
       // Broadcast the saved message with its timestamps to everyone in the room
       io.to(roomId).emit("new_message", message);

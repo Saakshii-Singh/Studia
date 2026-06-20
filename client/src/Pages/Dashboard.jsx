@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import RoomCard from "../components/RoomCard";
 import { motion } from "framer-motion";
 import { Plus, Search, Award, Sparkles } from "lucide-react";
-import { Plus, Search, Award, Sparkles, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {Link, useNavigate} from "react-router-dom";
 
 const containerVariants = {
@@ -106,12 +106,11 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen w-full bg-background pt-24 pb-12 flex flex-col items-center">
+       <div className="min-h-screen w-full bg-background pt-24 pb-12 flex flex-col items-center">
       {/* Floating Navbar */}
       <Navbar />
 
-      <div className="w-full max-w-6xl px-6 grid gap-8 md:grid-cols-[1.1fr_2.5fr] items-start mt-4">
-          {/* Back to Home Button */}
+      {/* Back to Home Button */}
       <div className="w-full max-w-6xl px-6 mt-4 flex justify-start">
         <Link
           to="/"
@@ -121,7 +120,10 @@ export default function Dashboard() {
           <span>Back to Home</span>
         </Link>
       </div>
-      <div className="w-full max-w-6xl px-6 grid gap-8 md:grid-cols-[1.1fr_2.5fr] items-start mt-4"></div>
+
+      {/* Main Grid Container */}
+      <div className="w-full max-w-6xl px-6 grid gap-8 md:grid-cols-[1.1fr_2.5fr] items-start mt-4">
+        
         {/* Left Column: Profile Card & Upgraded Study Group Form */}
         <div className="flex flex-col gap-6">
           {/* Stats Greeting */}
