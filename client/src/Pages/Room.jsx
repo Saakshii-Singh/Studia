@@ -275,12 +275,12 @@ export default function Room() {
 
       {/* Header details bar */}
       <div className="w-full max-w-6xl px-6 flex items-center justify-between border-b border-border/40 pb-4.5 mb-6">
-        <button
-          onClick={() => navigate("/dashboard")}
+                <button
+          onClick={() => navigate("/")}
           className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Exit Hub</span>
+          <span>Exit to Home</span>
         </button>
 
         <div className="text-center">
