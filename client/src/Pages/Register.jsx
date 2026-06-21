@@ -1,7 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
-import { UserPlus, BookOpen, Key, Mail, User, Eye, EyeOff } from "lucide-react";
+import { UserPlus, BookOpen, Key, Mail, User, Eye, EyeOff,ArrowLeft } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -78,10 +78,21 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-4 relative overflow-hidden bg-background">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 relative overflow-hidden bg-background">
       {/* Background neon glows */}
       <div className="absolute top-1/4 right-1/4 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-1/4 left-1/4 h-80 w-80 rounded-full bg-accent/5 blur-3xl" />
+
+      {/* Back to Home Button */}
+      <div className="w-full max-w-md mb-4 flex justify-start z-10">
+        <Link
+          to="/"
+          className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
 
       <div className="glass-panel p-8 rounded-3xl w-full max-w-md shadow-glow relative z-10 border-primary/25">
         
