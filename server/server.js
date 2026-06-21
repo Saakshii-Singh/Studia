@@ -125,13 +125,14 @@ io.on("connection", (socket) => {
   socket.on("timer_provide_state", ({ room, requesterId, minutes, seconds, isActive, isBreak, category }) => {
     io.to(requesterId).emit("timer_sync_event", { action: "state_reply", minutes, seconds, isActive, isBreak, category });
   });
-
-  // 3. Room Chat Messages
+// Import the automatic profanity filter library
+const Filter = require("bad-words");
+const filter = new Filter();
   // 3. Room Chat Messages
   socket.on("send_message", async ({ roomId, username, text }) => {
     try {
       // Apply the censorship filter first
-      const censoredText = censorText(text);
+     const censoredText = filter.clean(text);
 
       // Save the censored message permanently to the database
       const message = await Message.create({
