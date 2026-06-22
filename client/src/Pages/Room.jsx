@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Users, Sparkles, Volume2, Music, Check, Edit2 } from "lucide-react";
+import { ArrowLeft, Users, Sparkles, Volume2, Music, Check, Edit2, CloudRain, Headphones, Coffee, Flame} from "lucide-react";
 import API from "../services/api";
 import socket from "../socket/socket";
 import Navbar from "../components/Navbar";
@@ -235,7 +235,7 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
       }
     });
 
-    const newPlaying = { rain: false, lofi: false, cafe: false, piano: false, fire: false };
+    const newPlaying = { rain: false, lofi: false, cafe: false, piano: false, fire: false, soft: false };
     const newVols = { ...volumes };
 
     if (presetName === "cafe") {
@@ -326,28 +326,33 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               <h4 className="text-sm font-bold tracking-wider uppercase text-white">Focus Sounds</h4>
             </div>
 
-            {/* Quick Presets Mixer Bar */}
+                  {/* Quick Presets Mixer Bar */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 flex-wrap">
               <button
                 onClick={() => applySoundPreset("cafe")}
-                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
                 title="Rainy Café preset"
               >
-                🌧️☕ Café
+                <CloudRain className="h-3 w-3" />
+                <Coffee className="h-3 w-3" />
+                <span>Café</span>
               </button>
               <button
                 onClick={() => applySoundPreset("library")}
-                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
                 title="Library Beats preset"
               >
-                📚🎧 Library
+                <Headphones className="h-3 w-3" />
+                <span>Library</span>
               </button>
               <button
                 onClick={() => applySoundPreset("hearth")}
-                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all text-center"
+                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
                 title="Cozy Hearth preset"
               >
-                🔥🎹 Hearth
+                <Flame className="h-3 w-3" />
+                <Music className="h-3 w-3" />
+                <span>Hearth</span>
               </button>
             </div>
 
@@ -355,8 +360,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               {/* Rain Sound */}
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Soft Rain 🌧️</span>
-                  <button
+<span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <CloudRain className="h-4 w-4 text-primary" />
+  <span>Soft Rain</span>
+</span>                  <button
                     onClick={() => toggleAmbient("rain")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                       playingAmbient.rain
@@ -384,7 +391,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               {/* Lofi Beats */}
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Lofi Streams 🎧</span>
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <Headphones className="h-4 w-4 text-primary" />
+  <span>Lofi Streams</span>
+</span>
                   <button
                     onClick={() => toggleAmbient("lofi")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
@@ -413,7 +423,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               {/* Cafe Chatter */}
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Aesthetic Cafe ☕</span>
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <Coffee className="h-4 w-4 text-primary" />
+  <span>Aesthetic Cafe</span>
+</span>
                   <button
                     onClick={() => toggleAmbient("cafe")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
@@ -442,8 +455,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               {/* Classical Piano */}
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Classic Piano 🎹</span>
-                  <button
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <Music className="h-4 w-4 text-primary" />
+  <span>Classic Piano</span>
+</span>
                     onClick={() => toggleAmbient("piano")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                       playingAmbient.piano
@@ -472,7 +487,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
                             {/* Soft Song */}
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Soft Song 🎵</span>
+                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <Music className="h-4 w-4 text-accent" />
+  <span>Soft Song</span>
+</span>
                   <button
                     onClick={() => toggleAmbient("soft")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
@@ -499,8 +517,10 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
               </div>
               <div className="p-3.5 rounded-xl bg-muted/40 border border-border/30 flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-white">Cozy Fireplace 🔥</span>
-                  <button
+<span className="text-xs font-semibold text-white flex items-center gap-1.5">
+  <Flame className="h-4 w-4 text-primary" />
+  <span>Cozy Fireplace</span>
+</span>                  <button
                     onClick={() => toggleAmbient("fire")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                       playingAmbient.fire
