@@ -15,9 +15,9 @@ export default function Room() {
   const [roomName, setRoomName] = useState("Sanctum Chamber");
   const [username, setUsername] = useState("Guest Scholar");
   const [avatarColor, setAvatarColor] = useState("violet");
-  const [focusStatus, setFocusStatus] = useState("Analyzing deep topics... 📚");
+  const [focusStatus, setFocusStatus] = useState("Analyzing deep topics... ");
   const [isStatusEditing, setIsStatusEditing] = useState(false);
-  const [inputStatus, setInputStatus] = useState("Analyzing deep topics... 📚");
+  const [inputStatus, setInputStatus] = useState("Analyzing deep topics... ");
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -459,7 +459,7 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
   <Music className="h-4 w-4 text-primary" />
   <span>Classic Piano</span>
 </span>
-                    onClick={() => toggleAmbient("piano")}
+                   <button onClick={() => toggleAmbient("piano")}
                     className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                       playingAmbient.piano
                         ? "bg-accent/20 border-accent text-accent"

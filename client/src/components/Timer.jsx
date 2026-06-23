@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Play, Pause, RotateCcw, Coffee, Zap, Award, CheckCircle, Sparkles, X, Lock, Unlock, AlertTriangle } from "lucide-react";
+import { Play, Pause, RotateCcw, Coffee, Zap, Award, CheckCircle, Sparkles, X, Lock, Unlock, AlertTriangle, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../services/api";
 import socket from "../socket/socket";
@@ -311,7 +311,23 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
       console.error("Failed to sync study session to cloud:", error.message);
     }
   };
-
+  const adjustTime = (amount) => {
+    setMinutes((prevMins) => {
+      const newMins = Math.max(1, prevMins + amount); // Prevent going below 1 minute
+      
+      // Sync the changed time across sockets so other students see it instantly
+      socket.emit("timer_sync_control", {
+        room: roomId,
+        action: isActive ? "play" : "reset",
+        minutes: newMins,
+        seconds,
+        isBreak,
+        category,
+      });
+      
+      return newMins;
+    });
+  };
   const handleToggle = () => {
     const nextActive = !isActive;
     setIsActive(nextActive);
@@ -376,16 +392,35 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         <span>{isBreak ? "Recharge Break" : "Focus Core"}</span>
       </span>
 
-      {/* Timer Circular Display */}
-      <div className="mt-6 flex flex-col items-center justify-center">
-        <h2 className="text-6xl font-black font-display text-white tracking-widest drop-shadow-glow">
-          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-        </h2>
-        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-2.5">
-          {isBreak ? "chill and stretch" : `working on ${category}`}
-        </p>
-      </div>
+                {/* Timer Circular Display with Adjusters */}
+      <div className="mt-6 flex items-center justify-center gap-6 select-none">
+        {/* Subtract 5 minutes */}
+        <button
+          onClick={() => adjustTime(-5)}
+          className="h-9 w-9 rounded-xl bg-muted/60 border border-border/50 hover:border-red-500/40 text-[10px] font-bold text-muted-foreground hover:text-red-400 transition-all active:scale-90 cursor-pointer flex items-center justify-center"
+          title="Subtract 5 minutes"
+        >
+          -5m
+        </button>
 
+        <div className="flex flex-col items-center justify-center">
+          <h2 className="text-6xl font-black font-display text-white tracking-widest drop-shadow-glow">
+            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+          </h2>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-2.5">
+            {isBreak ? "chill and stretch" : `working on ${category}`}
+          </p>
+        </div>
+
+        {/* Add 5 minutes */}
+        <button
+          onClick={() => adjustTime(5)}
+          className="h-9 w-9 rounded-xl bg-muted/60 border border-border/50 hover:border-emerald-500/40 text-[10px] font-bold text-muted-foreground hover:text-emerald-400 transition-all active:scale-90 cursor-pointer flex items-center justify-center"
+          title="Add 5 minutes"
+        >
+          +5m
+        </button>
+      </div>
       {/* Dynamic Progress indicator */}
       <div className="w-full bg-border/40 h-1 rounded-full overflow-hidden mt-6">
         <div 
@@ -416,12 +451,12 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
           <span>{isActive ? "Pause" : "Focus"}</span>
         </button>
 
-        <button
+               <button
           onClick={() => setShowSettings(!showSettings)}
-          className="p-3 bg-muted/60 border border-border hover:bg-muted text-white rounded-xl transition-all cursor-pointer font-bold text-xs"
+          className="p-3 bg-muted/60 border border-border hover:bg-muted text-white rounded-xl transition-all cursor-pointer flex items-center justify-center"
           title="Customize focus"
         >
-          ⏱️
+          <Settings className="h-4.5 w-4.5 text-white" />
         </button>
       </div>
 
@@ -597,7 +632,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
               </span>
 
               <h2 className="text-2xl font-black tracking-tight text-white font-display uppercase tracking-widest text-red-400">
-                Focus Broken! ⚠️
+                Focus Broken! 
               </h2>
 
               <p className="text-xs text-muted-foreground mt-3 max-w-[260px] leading-relaxed">
