@@ -1,18 +1,20 @@
 import { useNavigate } from "react-router-dom";
-import { Users, BookOpen, ChevronRight, Hash } from "lucide-react";
+import { Users, BookOpen, ChevronRight, Hash, Code, Calculator, FlaskConical, PenTool, Languages } from "lucide-react";
 
 export default function RoomCard({ room }) {
   const navigate = useNavigate();
 
-  const getRoomEmoji = (name, subject) => {
+   const getRoomIcon = (subject) => {
     const s = subject.toLowerCase();
-    if (s.includes("code") || s.includes("computer")) return "💻";
-    if (s.includes("math")) return "📐";
-    if (s.includes("science")) return "🔬";
-    if (s.includes("writing")) return "✍️";
-    if (s.includes("language")) return "🗣️";
-    return "📚";
+    if (s.includes("code") || s.includes("computer")) return Code;
+    if (s.includes("math")) return Calculator;
+    if (s.includes("science")) return FlaskConical;
+    if (s.includes("writing")) return PenTool;
+    if (s.includes("language")) return Languages;
+    return BookOpen;
   };
+
+  const IconComponent = getRoomIcon(room.subject);
 
   // Get a neon badge color based on the subject category
   const getSubjectColor = (subject) => {
@@ -38,7 +40,9 @@ export default function RoomCard({ room }) {
         <div className="flex items-center justify-between mb-3.5">
           {/* Emoji & Subject Badge */}
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{getRoomEmoji(room.roomName, room.subject)}</span>
+            <span className="text-2xl">
+              <IconComponent className="h-6 w-6" />
+            </span>
             <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border ${getSubjectColor(room.subject)}`}>
               {room.subject}
             </span>
