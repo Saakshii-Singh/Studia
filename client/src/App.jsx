@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./Pages/Home";       // Maps to our stunning landing page
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
@@ -8,9 +8,34 @@ import Room from "./Pages/Room";
 import Verify from "./Pages/Verify"; // Maps to our secure OTP workspace
 import API from "./services/api";
 
+// 🔐 Protected Route Wrapper to enforce Authentication & Verification
+function ProtectedRoute({ children, allowUnverified = false }) {
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+
+  // 1. If not logged in, redirect to login
+  if (!token || !storedUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // 2. If logged in but not verified, redirect to verification workspace
+  if (!allowUnverified) {
+    try {
+      const user = JSON.parse(storedUser);
+      if (!user.isVerified) {
+        return <Navigate to="/verify" replace />;
+      }
+    } catch (e) {
+      return <Navigate to="/login" replace />;
+    }
+  }
+
+  return children;
+}
+
 function App() {
   useEffect(() => {
-    // 1. Instant local verification route guard
+    // 1. Instant local verification route guard on boot
     const enforceVerification = () => {
       const storedUser = localStorage.getItem("user");
       const path = window.location.pathname;
@@ -61,12 +86,36 @@ function App() {
       {/* Container wraps full viewport without padding/centering conflicts */}
       <div className="min-h-screen w-full bg-background text-foreground overflow-x-hidden">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/room/:id" element={<Room />} />
-          <Route path="/verify" element={<Verify />} />
+
+          {/* Protected Routes (require signing in) */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/room/:id" 
+            element={
+              <ProtectedRoute>
+                <Room />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/verify" 
+            element={
+              <ProtectedRoute allowUnverified={true}>
+                <Verify />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </div>
     </BrowserRouter>

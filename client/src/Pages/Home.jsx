@@ -200,7 +200,7 @@ function Hero() {
       <div className="mx-auto max-w-7xl px-6 pt-40 pb-32 md:pt-48 md:pb-44">
         <div className="max-w-2xl text-white">
           <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl text-white font-display">
-            Meet, chat, and study with students from all over the world 🌎
+            Meet, chat, and study with students from all over the world 
           </h1>
           <p className="mt-6 max-w-lg text-lg text-white/90">
             Join the largest global student community online on Studia and say goodbye to lack of motivation.

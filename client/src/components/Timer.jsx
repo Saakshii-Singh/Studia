@@ -122,7 +122,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
     };
   }, [roomId, minutes, seconds, isActive, isBreak, category]);
 
-  // Main countdown timer ticker
+    // Main countdown timer ticker
   useEffect(() => {
     if (isActive) {
       intervalRef.current = setInterval(() => {
@@ -134,12 +134,23 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
             setIsActive(false);
 
             if (!isBreak) {
+              // Log the session. The user will choose to take or skip the break inside the completion modal.
               saveStudySession(customWorkTime);
-              setIsBreak(true);
-              setMinutes(5); // 5 min break
             } else {
+              // Break finished naturally: return to focus mode
               setIsBreak(false);
               setMinutes(customWorkTime);
+              setSeconds(0);
+              
+              // Broadcast transition back to focus mode
+              socket.emit("timer_sync_control", {
+                room: roomId,
+                action: "reset",
+                minutes: customWorkTime,
+                seconds: 0,
+                isBreak: false,
+                category,
+              });
             }
           } else {
             setMinutes((m) => m - 1);
@@ -154,7 +165,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
     }
 
     return () => clearInterval(intervalRef.current);
-  }, [isActive, seconds, minutes, isBreak, customWorkTime]);
+  }, [isActive, seconds, minutes, isBreak, customWorkTime, roomId, category]);
 
   // --- Deep Focus Lockdown Core Logic ---
   useEffect(() => {
@@ -266,6 +277,15 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
   }, [isActive, isBreak, lockdownMode, roomId, minutes, seconds, category]);
 
   const saveStudySession = async (mins) => {
+    const earnedXp = mins * 10;
+
+    // Set default modal details in case of API failure
+    setModalDetails({
+      duration: mins,
+      xp: earnedXp,
+      level: 1,
+    });
+
     try {
       const response = await API.post("/study/log", {
         duration: mins,
@@ -273,7 +293,6 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         roomName: roomName || "Virtual Sanctum",
       });
 
-      const earnedXp = mins * 10;
       let finalLevel = 1;
       let hasLeveledUp = false;
 
@@ -292,7 +311,6 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         hasLeveledUp = response.data.userStats.leveledUp;
       }
 
-      // Configure and open gorgeous celebratory modal rather than native alert boxes!
       setModalDetails({
         duration: mins,
         xp: earnedXp,
@@ -309,6 +327,48 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
       if (onSessionSaved) onSessionSaved();
     } catch (error) {
       console.error("Failed to sync study session to cloud:", error.message);
+      
+      // Fallback: Still show the modal to ask for the break even if the server request fails
+      setShowSessionModal(true);
+    }
+  };
+    // Handles user choice at the end of a study session
+  const handleSessionEndChoice = (takeBreak) => {
+    setShowSessionModal(false);
+    setShowLevelUpModal(false);
+
+    if (takeBreak) {
+      // 1. Transition to 5-minute break
+      setIsBreak(true);
+      setMinutes(5);
+      setSeconds(0);
+      setIsActive(false);
+
+      // Sync break state with other students in the room
+      socket.emit("timer_sync_control", {
+        room: roomId,
+        action: "reset",
+        minutes: 5,
+        seconds: 0,
+        isBreak: true,
+        category,
+      });
+    } else {
+      // 2. Skip break: reset back to study focus duration
+      setIsBreak(false);
+      setMinutes(customWorkTime);
+      setSeconds(0);
+      setIsActive(false);
+
+      // Sync reset focus state with other students in the room
+      socket.emit("timer_sync_control", {
+        room: roomId,
+        action: "reset",
+        minutes: customWorkTime,
+        seconds: 0,
+        isBreak: false,
+        category,
+      });
     }
   };
   const adjustTime = (amount) => {
@@ -517,7 +577,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
 
       {/* CUSTOM CELEBRATION MODALS */}
       <AnimatePresence>
-        {/* 1. Focus Session Completed Modal */}
+                {/* 1. Focus Session Completed Modal */}
         {showSessionModal && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center px-4">
             <motion.div
@@ -527,8 +587,8 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
               className="glass-panel p-8 rounded-3xl w-full max-w-sm border-primary/20 shadow-glow relative text-center flex flex-col items-center"
             >
               <button
-                onClick={() => setShowSessionModal(false)}
-                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-white"
+                onClick={() => handleSessionEndChoice(false)} // Default to skipping break
+                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -556,17 +616,26 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowSessionModal(false)}
-                className="w-full bg-gradient-neon py-3 rounded-xl font-bold uppercase tracking-wider text-xs text-white shadow-glow hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
-              >
-                Continue Studying
-              </button>
+              {/* Two Choice Buttons */}
+              <div className="flex flex-col gap-2 w-full">
+                <button
+                  onClick={() => handleSessionEndChoice(true)}
+                  className="w-full bg-gradient-neon py-3 rounded-xl font-bold uppercase tracking-wider text-xs text-white shadow-glow hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
+                >
+                  Take 5m Break ☕
+                </button>
+                <button
+                  onClick={() => handleSessionEndChoice(false)}
+                  className="w-full bg-white/10 hover:bg-white/20 border border-white/15 py-3 rounded-xl font-bold uppercase tracking-wider text-xs text-white transition-all cursor-pointer"
+                >
+                  Skip Break & Keep Focusing ⚡
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
 
-        {/* 2. Level Up Scholar Modal */}
+               {/* 2. Level Up Scholar Modal */}
         {showLevelUpModal && (
           <div className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 flex items-center justify-center px-4">
             <motion.div
@@ -579,8 +648,8 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
               <div className="absolute inset-0 bg-radial-glow opacity-30 pointer-events-none" />
 
               <button
-                onClick={() => setShowLevelUpModal(false)}
-                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-white z-10"
+                onClick={() => handleSessionEndChoice(false)} // Default to skipping break
+                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-white z-10 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -608,16 +677,24 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
                 </strong>
               </div>
 
-              <button
-                onClick={() => setShowLevelUpModal(false)}
-                className="w-full bg-gradient-neon py-3.5 rounded-xl font-black uppercase tracking-widest text-xs text-white shadow-cyanGlow hover:scale-[1.01] active:scale-95 transition-all cursor-pointer z-10"
-              >
-                Keep Leveling Up!
-              </button>
+              {/* Two Choice Buttons */}
+              <div className="flex flex-col gap-2 w-full z-10">
+                <button
+                  onClick={() => handleSessionEndChoice(true)}
+                  className="w-full bg-gradient-neon py-3.5 rounded-xl font-black uppercase tracking-widest text-xs text-white shadow-cyanGlow hover:scale-[1.01] active:scale-95 transition-all cursor-pointer"
+                >
+                  Take 5m Break 
+                </button>
+                <button
+                  onClick={() => handleSessionEndChoice(false)}
+                  className="w-full bg-white/10 hover:bg-white/20 border border-white/15 py-3.5 rounded-xl font-black uppercase tracking-widest text-xs text-white transition-all cursor-pointer"
+                >
+                  Skip Break & Keep Focusing 
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
-
         {/* 3. Distraction Detected Warning Modal */}
         {showDistractionModal && (
           <div className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 flex items-center justify-center px-4">

@@ -130,7 +130,7 @@ export default function Dashboard() {
           <div className="glass-panel p-6 rounded-3xl relative overflow-hidden border-primary/15">
             <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-primary/5 blur-xl" />
             <h2 className="text-xl font-bold tracking-tight text-white mb-1">
-              Welcome, {user ? user.username : "Scholar"}! 👋
+              Welcome, {user ? user.username : "Scholar"}! 
             </h2>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Discover and search for focused study groups, or launch your own specific course sanctum to start co-studying!
