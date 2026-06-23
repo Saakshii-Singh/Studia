@@ -1,6 +1,24 @@
 import { useEffect, useRef } from "react";
 import { Send, MessageSquare } from "lucide-react";
-
+// 🎨 Simple hash generator to assign a persistent, unique color to each user in the chat
+const getUsernameColor = (name, isMe) => {
+  if (isMe) return "text-accent";
+  const colors = [
+    "text-indigo-400", 
+    "text-emerald-400", 
+    "text-pink-400", 
+    "text-amber-400", 
+    "text-cyan-400", 
+    "text-violet-400",
+    "text-teal-400"
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
 export default function ChatBox({ messages, message, setMessage, sendMessage, username }) {
   const bottomRef = useRef(null);
 
@@ -40,12 +58,17 @@ export default function ChatBox({ messages, message, setMessage, sendMessage, us
                 key={index} 
                 className={`flex flex-col max-w-[85%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}
               >
-                {/* Username label */}
-                <span className={`text-[10px] font-black uppercase tracking-wider mb-1 px-1.5 ${
-                  isMe ? "text-accent" : "text-primary"
-                }`}>
-                  {msg.username}
-                </span>
+                              {/* Username & Formatted Timestamp label */}
+                <div className="flex items-center gap-2 mb-1 px-1.5">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${getUsernameColor(msg.username, isMe)}`}>
+                    {msg.username}
+                  </span>
+                  {msg.createdAt && (
+                    <span className="text-[8px] text-muted-foreground font-medium">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
                 
                 {/* Chat bubble */}
                 <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${

@@ -3,6 +3,8 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
+const Filter = require("bad-words");
+const filter = new Filter();
 
 // Configuration & Database connection
 const connectDB = require("./config/db");
@@ -103,7 +105,15 @@ io.on("connection", (socket) => {
     // Broadcast the updated list of students in the room to everyone inside
     io.to(room).emit("room_users_list", Object.values(activeRooms[room]));
   });
-
+  // 1.5. Leave a Co-Studying Room
+  socket.on("leave_study_room", ({ room }) => {
+    if (activeRooms[room] && activeRooms[room][socket.id]) {
+      delete activeRooms[room][socket.id];
+      // Broadcast the updated student list to let others know they left
+      io.to(room).emit("room_users_list", Object.values(activeRooms[room]));
+      console.log(`Socket ${socket.id} left room: ${room}`);
+    }
+  });
   // 2. Update Focus Status (e.g. changing status message on the fly)
   socket.on("update_focus_status", ({ room, focus }) => {
     if (activeRooms[room] && activeRooms[room][socket.id]) {

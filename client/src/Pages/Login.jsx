@@ -38,7 +38,7 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(response.data.user));
       
       // Dispatch custom event to refresh the Navbar state instantly
-      window.dispatchEvent(new Event("hh_login_state_change"));
+      window.dispatchEvent(new Event("studia_login_state_change"));
       
       if (response.data.user && !response.data.user.isVerified) {
         navigate("/verify");
@@ -83,6 +83,11 @@ export default function Login() {
           </p>
         </div>
 
+                {error && (
+          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center animate-shake">
+            {error}
+          </div>
+        )}
         {error && (
           <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center">
             {error}

@@ -25,7 +25,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
   const [showDistractionModal, setShowDistractionModal] = useState(false);
   const [distractionsCount, setDistractionsCount] = useState(0);
   const [deductedXp, setDeductedXp] = useState(0);
-
+  const [breathingState, setBreathingState] = useState("Inhale");
   const intervalRef = useRef(null);
 
   // Web Audio API Chime Synth
@@ -74,7 +74,15 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
       console.log("Audio chime playback blocked:", e);
     }
   };
+useEffect(() => {
+  if (!isBreak) return;
+  
+  const interval = setInterval(() => {
+    setBreathingState((prev) => (prev === "Inhale" ? "Exhale" : "Inhale"));
+  }, 4000); // 4-second breathing phase
 
+  return () => clearInterval(interval);
+}, [isBreak]);
   // --- Real-time Pomodoro Sockets Syncing ---
   useEffect(() => {
     // Listen for incoming timer sync actions
@@ -221,7 +229,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
           userObj.experience = userObj.xp;
           userObj.level = Math.floor(Math.sqrt(userObj.xp / 100)) + 1;
           localStorage.setItem("user", JSON.stringify(userObj));
-          window.dispatchEvent(new Event("hh_login_state_change"));
+          window.dispatchEvent(new Event("studia_login_state_change"));
         } catch (e) {
           console.error(e);
         }
@@ -305,7 +313,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
           userObj.studyStreak = response.data.userStats.studyStreak;
           userObj.totalStudyTime = response.data.userStats.totalStudyTime;
           localStorage.setItem("user", JSON.stringify(userObj));
-          window.dispatchEvent(new Event("hh_login_state_change"));
+          window.dispatchEvent(new Event("studia_login_state_change"));
         }
         finalLevel = response.data.userStats.level;
         hasLeveledUp = response.data.userStats.leveledUp;
@@ -464,12 +472,30 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         </button>
 
         <div className="flex flex-col items-center justify-center">
-          <h2 className="text-6xl font-black font-display text-white tracking-widest drop-shadow-glow">
+                    <h2 className={`text-6xl font-black font-display tracking-widest transition-all duration-500 ${
+            isActive && minutes === 0 && !isBreak
+              ? "text-red-400 drop-shadow-[0_0_20px_rgba(248,113,113,0.7)] animate-pulse scale-[1.03]"
+              : "text-white drop-shadow-glow"
+          }`}>
             {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
           </h2>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-2.5">
-            {isBreak ? "chill and stretch" : `working on ${category}`}
-          </p>
+                   {isBreak ? (
+            <div className="flex flex-col items-center mt-3 select-none">
+              <span className={`text-[10px] uppercase tracking-widest font-black transition-all duration-1000 ${
+                breathingState === "Inhale" ? "text-cyan-400 scale-105" : "text-violet-400 scale-95"
+              }`}>
+                {breathingState === "Inhale" ? "Breathe In... 🌸" : "Breathe Out... 💨"}
+              </span>
+              {/* Pulsing breathing bubble */}
+              <div className={`mt-2 h-3.5 w-3.5 rounded-full blur-[2px] transition-all duration-[4000ms] ${
+                breathingState === "Inhale" ? "bg-cyan-400 scale-[2.2] opacity-80" : "bg-violet-500 scale-[1.0] opacity-40"
+              }`} />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-2.5">
+              working on {category}
+            </p>
+          )}
         </div>
 
         {/* Add 5 minutes */}
@@ -508,7 +534,7 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
           }`}
         >
           {isActive ? <Pause className="h-4.5 w-4.5 fill-current" /> : <Play className="h-4.5 w-4.5 fill-current" />}
-          <span>{isActive ? "Pause" : "Focus"}</span>
+                    <span>{isActive ? "Pause" : (isBreak ? "Start" : "Focus")}</span>
         </button>
 
                <button
@@ -551,27 +577,61 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         )}
       </button>
 
-      {/* Custom Duration Overlay */}
+            {/* Custom Duration Overlay */}
       {showSettings && (
-        <div className="glass-panel p-4 rounded-xl absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card/95">
-          <h4 className="text-sm font-bold tracking-wider text-white uppercase">Focus Duration</h4>
-          <div className="flex gap-2.5">
-            {[10, 25, 50, 60].map((mins) => (
+        <div className="glass-panel p-6 rounded-xl absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-card/95">
+          <h4 className="text-sm font-bold tracking-wider text-white uppercase font-display">Customize Focus</h4>
+          
+          {/* Quick presets */}
+          <div className="flex gap-2 w-full justify-center">
+            {[15, 25, 45, 60].map((mins) => (
               <button
                 key={mins}
+                type="button"
                 onClick={() => applyCustomSettings(mins)}
-                className="px-3.5 py-2.5 bg-muted/80 border border-border rounded-lg text-xs font-bold hover:border-primary text-white cursor-pointer"
+                className="px-3 py-1.5 bg-muted/80 border border-border hover:border-primary rounded-lg text-xs font-bold text-white cursor-pointer"
               >
                 {mins}m
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setShowSettings(false)}
-            className="text-xs font-bold text-muted-foreground hover:text-white mt-2 cursor-pointer"
-          >
-            Cancel
-          </button>
+
+          <div className="h-[1px] bg-white/10 w-full my-1"></div>
+
+          {/* Range Slider for Custom Minutes */}
+          <div className="w-full flex flex-col gap-1.5">
+            <div className="flex justify-between text-xs font-bold">
+              <span className="text-muted-foreground">Focus Duration</span>
+              <span className="text-primary font-black">{customWorkTime} mins</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="120"
+              step="5"
+              value={customWorkTime}
+              onChange={(e) => setCustomWorkTime(parseInt(e.target.value))}
+              className="w-full accent-primary h-1.5 rounded-lg bg-border/40 cursor-pointer"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={() => applyCustomSettings(customWorkTime)}
+              className="px-4 py-2 bg-gradient-neon text-white text-xs font-bold rounded-xl shadow-glow hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+            >
+              Apply
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSettings(false)}
+              className="px-4 py-2 bg-white/5 border border-white/10 text-muted-foreground hover:text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

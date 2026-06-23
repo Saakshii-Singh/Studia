@@ -66,8 +66,8 @@ export default function Dashboard() {
       if (u) setUser(JSON.parse(u));
       else setUser(null);
     };
-    window.addEventListener("hh_login_state_change", handleLoginChange);
-    return () => window.removeEventListener("hh_login_state_change", handleLoginChange);
+    window.addEventListener("studia_login_state_change", handleLoginChange);
+    return () => window.removeEventListener("studia_login_state_change", handleLoginChange);
   }, []);
 
   const createRoom = async (e) => {

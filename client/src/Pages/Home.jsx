@@ -162,7 +162,7 @@ function Nav({ user }) {
                     onClick={() => {
                       localStorage.removeItem("token");
                       localStorage.removeItem("user");
-                      window.dispatchEvent(new Event("hh_login_state_change"));
+                      window.dispatchEvent(new Event("studia_login_state_change"));
                       window.location.reload();
                     }}
                     className="w-full py-2 text-[10px] uppercase tracking-widest font-black text-white/60 hover:text-red-400 transition-colors cursor-pointer rounded-xl bg-white/5 border border-white/10 hover:border-red-500/20"

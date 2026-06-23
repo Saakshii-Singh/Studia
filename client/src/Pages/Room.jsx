@@ -7,6 +7,14 @@ import Navbar from "../components/Navbar";
 import Timer from "../components/Timer";
 import ChatBox from "../components/ChatBox";
 import Sidebar from "../components/Sidebar";
+// 🌊 Micro Audio-Wave Visualizer Component
+const AudioWave = () => (
+  <div className="flex items-end gap-0.5 h-3.5 w-4">
+    <div className="w-0.5 bg-accent rounded-full animate-wave-bar" style={{ animationDelay: '0.1s' }} />
+    <div className="w-0.5 bg-accent rounded-full animate-wave-bar" style={{ animationDelay: '0.3s' }} />
+    <div className="w-0.5 bg-accent rounded-full animate-wave-bar" style={{ animationDelay: '0.5s' }} />
+  </div>
+);
 
 export default function Room() {
   const { id } = useParams();
@@ -102,6 +110,7 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
     });
 
     return () => {
+      socket.emit("leave_study_room", { room: id });
       socket.off("room_users_list");
       socket.off("new_message");
       
@@ -175,37 +184,69 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
     });
   };
 
-   // 6. Ambient Sounds Controls (Exclusively plays one sound at a time)
+    // 🔉 Helper to smoothly fade audio in / out over 0.8 seconds
+  const fadeAudio = (ref, targetVol, startPlay) => {
+    if (!ref.current) return;
+    const audio = ref.current;
+    
+    // Clear any active fade interval on this stream
+    if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+    
+    if (startPlay) {
+      audio.volume = 0;
+      audio.play().catch(e => console.log(e));
+      
+      const step = targetVol / 10;
+      audio.fadeInterval = setInterval(() => {
+        if (audio.volume + step >= targetVol) {
+          audio.volume = targetVol;
+          clearInterval(audio.fadeInterval);
+        } else {
+          audio.volume += step;
+        }
+      }, 80); // Incremental fade-in
+    } else {
+      const step = Math.max(0.05, audio.volume / 10);
+      audio.fadeInterval = setInterval(() => {
+        if (audio.volume - step <= 0) {
+          audio.volume = 0;
+          audio.pause();
+          clearInterval(audio.fadeInterval);
+        } else {
+          audio.volume -= step;
+        }
+      }, 80); // Incremental fade-out
+    }
+  };
+
+  // 6. Ambient Sounds Controls (Exclusively fades one sound in/out at a time)
   const toggleAmbient = (sound) => {
     const isPlaying = playingAmbient[sound];
     const refs = { rain: rainRef, lofi: lofiRef, cafe: cafeRef, piano: pianoRef, fire: fireRef, soft: softRef };
 
     if (!isPlaying) {
-      // 1. Pause all other active audio streams first
+      // 1. Fade out other active streams
       Object.keys(refs).forEach((key) => {
-        if (key !== sound && refs[key].current) {
-          refs[key].current.pause();
+        if (key !== sound && playingAmbient[key] && refs[key].current) {
+          fadeAudio(refs[key], 0, false);
         }
       });
       
-      // 2. Set all other playing states to false, and the chosen one to true
+      // 2. Set states
       setPlayingAmbient({
         rain: false, lofi: false, cafe: false, piano: false, fire: false, soft: false,
         [sound]: true
       });
       
-      // 3. Play the selected sound
-      const selectedRef = refs[sound];
-      if (selectedRef.current) {
-        selectedRef.current.volume = volumes[sound];
-        selectedRef.current.play().catch(e => console.log("Audio play blocked:", e));
-      }
+      // 3. Fade in target sound
+      fadeAudio(refs[sound], volumes[sound], true);
     } else {
-      // 4. Pause the current sound if already playing
-      if (refs[sound].current) {
-        refs[sound].current.pause();
-      }
-      setPlayingAmbient((prev) => ({ ...prev, [sound]: false }));
+      // Fade out current sound
+      fadeAudio(refs[sound], 0, false);
+      setPlayingAmbient((prev) => ({
+        ...prev,
+        [sound]: false
+      }));
     }
   };
 
@@ -328,23 +369,28 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
 
                   {/* Quick Presets Mixer Bar */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 flex-wrap">
-              <button
-                onClick={() => applySoundPreset("cafe")}
-                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
-                title="Rainy Café preset"
-              >
-                <CloudRain className="h-3 w-3" />
-                <Coffee className="h-3 w-3" />
-                <span>Café</span>
-              </button>
-              <button
-                onClick={() => applySoundPreset("library")}
-                className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
-                title="Library Beats preset"
-              >
-                <Headphones className="h-3 w-3" />
-                <span>Library</span>
-              </button>
+                                <button
+                    onClick={() => toggleAmbient("cafe")}
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      playingAmbient.cafe
+                        ? "bg-accent/20 border-accent text-accent"
+                        : "bg-muted hover:bg-border text-muted-foreground border-border"
+                    }`}
+                  >
+                    <span>{playingAmbient.cafe ? "Pause" : "Play"}</span>
+                    {playingAmbient.cafe && <AudioWave />}
+                  </button>
+                                <button
+                    onClick={() => toggleAmbient("lofi")}
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      playingAmbient.lofi
+                        ? "bg-accent/20 border-accent text-accent"
+                        : "bg-muted hover:bg-border text-muted-foreground border-border"
+                    }`}
+                  >
+                    <span>{playingAmbient.lofi ? "Pause" : "Play"}</span>
+                    {playingAmbient.lofi && <AudioWave />}
+                  </button>
               <button
                 onClick={() => applySoundPreset("hearth")}
                 className="flex-1 min-w-[70px] px-2.5 py-1.5 rounded-xl bg-muted/50 border border-border hover:border-accent/40 active:scale-95 text-[9px] font-black uppercase tracking-wider text-accent cursor-pointer transition-all flex items-center justify-center gap-1"
@@ -363,15 +409,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
   <CloudRain className="h-4 w-4 text-primary" />
   <span>Soft Rain</span>
-</span>                  <button
+</span>                                  <button
                     onClick={() => toggleAmbient("rain")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.rain
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.rain ? "Pause" : "Play"}
+                    <span>{playingAmbient.rain ? "Pause" : "Play"}</span>
+                    {playingAmbient.rain && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -395,15 +442,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
   <Headphones className="h-4 w-4 text-primary" />
   <span>Lofi Streams</span>
 </span>
-                  <button
+                                   <button
                     onClick={() => toggleAmbient("lofi")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.lofi
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.lofi ? "Pause" : "Play"}
+                    <span>{playingAmbient.lofi ? "Pause" : "Play"}</span>
+                    {playingAmbient.lofi && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -427,15 +475,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
   <Coffee className="h-4 w-4 text-primary" />
   <span>Aesthetic Cafe</span>
 </span>
-                  <button
+                                    <button
                     onClick={() => toggleAmbient("cafe")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.cafe
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.cafe ? "Pause" : "Play"}
+                    <span>{playingAmbient.cafe ? "Pause" : "Play"}</span>
+                    {playingAmbient.cafe && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -459,14 +508,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
   <Music className="h-4 w-4 text-primary" />
   <span>Classic Piano</span>
 </span>
-                   <button onClick={() => toggleAmbient("piano")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                                     <button 
+                    onClick={() => toggleAmbient("piano")}
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.piano
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.piano ? "Pause" : "Play"}
+                    <span>{playingAmbient.piano ? "Pause" : "Play"}</span>
+                    {playingAmbient.piano && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -491,15 +542,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
   <Music className="h-4 w-4 text-accent" />
   <span>Soft Song</span>
 </span>
-                  <button
+                                                     <button
                     onClick={() => toggleAmbient("soft")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.soft
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.soft ? "Pause" : "Play"}
+                    <span>{playingAmbient.soft ? "Pause" : "Play"}</span>
+                    {playingAmbient.soft && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -520,15 +572,16 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
 <span className="text-xs font-semibold text-white flex items-center gap-1.5">
   <Flame className="h-4 w-4 text-primary" />
   <span>Cozy Fireplace</span>
-</span>                  <button
+</span>                                   <button
                     onClick={() => toggleAmbient("fire")}
-                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                       playingAmbient.fire
                         ? "bg-accent/20 border-accent text-accent"
                         : "bg-muted hover:bg-border text-muted-foreground border-border"
                     }`}
                   >
-                    {playingAmbient.fire ? "Pause" : "Play"}
+                    <span>{playingAmbient.fire ? "Pause" : "Play"}</span>
+                    {playingAmbient.fire && <AudioWave />}
                   </button>
                 </div>
                 <div className="flex items-center gap-2">

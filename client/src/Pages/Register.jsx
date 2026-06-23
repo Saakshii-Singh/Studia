@@ -67,7 +67,7 @@ export default function Register() {
       }
 
       // Notify Navbar
-      window.dispatchEvent(new Event("hh_login_state_change"));
+      window.dispatchEvent(new Event("studia_login_state_change"));
       
       navigate("/verify");
     } catch (err) {
@@ -109,8 +109,8 @@ export default function Register() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center">
+                {error && (
+          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center animate-shake">
             {error}
           </div>
         )}

@@ -96,7 +96,7 @@ exports.register = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "studiatogether_secret_key_112233",
       {
         expiresIn: "7d",
       }
@@ -143,14 +143,11 @@ exports.login = async (req, res) => {
         message: "Invalid credentials",
       });
     }
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
+const token = jwt.sign(
+  { id: user._id },
+  process.env.JWT_SECRET || "studiatogether_secret_key_112233",
+  { expiresIn: "7d" }
+);
 
     res.status(200).json({
       token,

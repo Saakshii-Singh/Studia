@@ -63,7 +63,7 @@ function App() {
         
         // Sync fresh database stats (XP, level, verification status)
         localStorage.setItem("user", JSON.stringify(user));
-        window.dispatchEvent(new Event("hh_login_state_change"));
+        window.dispatchEvent(new Event("studia_login_state_change"));
 
         // Enforce guard on newly returned server profile data
         const path = window.location.pathname;
@@ -75,7 +75,7 @@ function App() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("dev_verification_code");
-        window.dispatchEvent(new Event("hh_login_state_change"));
+        window.dispatchEvent(new Event("studia_login_state_change"));
       }
     };
     checkSession();
