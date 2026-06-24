@@ -4,7 +4,67 @@ import { Play, Pause, RotateCcw, Coffee, Zap, Award, CheckCircle, Sparkles, X, L
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../services/api";
 import socket from "../socket/socket";
+//  Lightweight, Zero-Dependency Canvas Confetti Explosion
+const triggerConfetti = () => {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "9999";
+    document.body.appendChild(canvas);
 
+    const ctx = canvas.getContext("2d");
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const colors = ["#8b5cf6", "#06b6d4", "#ec4899", "#10b981", "#f59e0b"];
+    const particles = Array.from({ length: 80 }).map(() => ({
+      x: width / 2,
+      y: height / 2,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 0.7) * 14,
+      radius: Math.random() * 3.5 + 2.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      decay: Math.random() * 0.015 + 0.012,
+    }));
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      let alive = false;
+
+      particles.forEach((p) => {
+        if (p.alpha > 0) {
+          alive = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.22; // Gravity pull
+          p.alpha -= p.decay;
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+
+      if (alive) {
+        requestAnimationFrame(animate);
+      } else {
+        document.body.removeChild(canvas);
+      }
+    };
+    animate();
+  } catch (e) {
+    console.error("Confetti blast blocked:", e);
+  }
+};
 export default function Timer({ roomName, category = "General", onSessionSaved }) {
   const { id: roomId } = useParams();
 
@@ -324,6 +384,9 @@ useEffect(() => {
         xp: earnedXp,
         level: finalLevel,
       });
+
+           // Trigger the gorgeous celebration confetti burst!
+      triggerConfetti();
 
       if (hasLeveledUp) {
         playChime(true);

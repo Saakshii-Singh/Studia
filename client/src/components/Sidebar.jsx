@@ -188,15 +188,18 @@ export default function Sidebar() {
 
       {/* Tasks checklist */}
       <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-        {tasks.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground/75 text-center mt-6 leading-relaxed">
-            No study tasks yet. Add a focus checklist item above!
-          </p>
+                {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center gap-2 mt-6 py-8 border border-dashed border-border/30 rounded-2xl bg-muted/5 select-none">
+            <ListTodo className="h-5 w-5 text-muted-foreground/50" />
+            <p className="text-[11px] text-muted-foreground/80 max-w-[180px] leading-relaxed">
+              No study tasks yet. Add a focus checklist item above!
+            </p>
+          </div>
         ) : (
           tasks.map((task) => (
-            <div
+                             <div
               key={task._id}
-              className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 hover:border-border transition-all"
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 hover:border-border transition-all animate-slide-down"
             >
               <div 
                 onClick={() => handleToggleTask(task._id, task.completed)}
