@@ -3,7 +3,7 @@ import API from "../services/api";
 import Navbar from "../components/Navbar";
 import RoomCard from "../components/RoomCard";
 import { motion } from "framer-motion";
-import { Plus, Search, Award, Sparkles } from "lucide-react";
+import { Plus, Search, Award, Sparkles, X } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
 import {Link, useNavigate} from "react-router-dom";
 
@@ -25,6 +25,14 @@ const cardVariants = {
 };
 
 const CATEGORIES = ["All", "Coding", "Mathematics", "Science", "Writing", "Languages"];
+const CATEGORY_ICONS = {
+  All: "🌍",
+  Coding: "💻",
+  Mathematics: "📐",
+  Science: "🔬",
+  Writing: "📝",
+  Languages: "🗣️",
+};
 
 export default function Dashboard() {
   const [rooms, setRooms] = useState([]);
@@ -227,15 +235,24 @@ export default function Dashboard() {
             </div>
 
             {/* Interactive Search input */}
-            <div className="relative w-full">
-              <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-muted-foreground/60" />
+            <div className="relative w-full flex items-center">
+              <Search className="absolute left-4 h-4.5 w-4.5 text-muted-foreground/60" />
               <input
                 type="text"
                 placeholder="Search groups by keywords, description, or subject..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/50 focus:border-primary transition-all"
+                className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/50 focus:border-primary transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3.5 p-1 rounded-md text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Subject Categories Bar */}
@@ -244,13 +261,14 @@ export default function Dashboard() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                     selectedCategory === cat
                       ? "bg-primary text-background font-bold shadow-glow"
                       : "bg-muted/50 text-muted-foreground border border-border/50 hover:bg-muted/80 hover:text-white"
                   }`}
                 >
-                  {cat}
+                  <span>{CATEGORY_ICONS[cat] || "📋"}</span>
+                  <span>{cat}</span>
                 </button>
               ))}
             </div>
