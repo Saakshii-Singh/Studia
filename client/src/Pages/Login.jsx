@@ -89,7 +89,7 @@ export default function Login() {
           </div>
         )}
         {error && (
-          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center">
+          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 text-center animate-shake">
             {error}
           </div>
         )}
@@ -104,7 +104,7 @@ export default function Login() {
               placeholder="Email Address"
               value={formData.email}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:shadow-glow transition-all"
             />
           </div>
 
@@ -117,7 +117,7 @@ export default function Login() {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full pl-11 pr-12 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:shadow-glow transition-all"
             />
             <button
               type="button"

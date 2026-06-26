@@ -167,16 +167,15 @@ export default function Dashboard() {
             )}
 
             <form onSubmit={createRoom} className="flex flex-col gap-4">
-              {/* Room name */}
+              {/* Group Name */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Group Name</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g., Python Coders Hub 🐍"
+                  placeholder="e.g., LeetCode Sprint 🚀"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent focus:shadow-cyanGlow transition-all"
                 />
               </div>
 
@@ -199,14 +198,17 @@ export default function Dashboard() {
 
               {/* Description */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Group description</label>
+                <div className="flex justify-between items-center select-none">
+                  <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Group description</label>
+                  <span className="text-[9px] font-bold text-muted-foreground">{description.length}/200</span>
+                </div>
                 <textarea
                   placeholder="e.g., Studying algorithms, sharing screens, and using Pomodoro! Join to chat."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength="200"
                   rows="3"
-                  className="w-full px-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent transition-all resize-none"
+                  className="w-full px-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/60 focus:border-accent focus:shadow-cyanGlow transition-all resize-none"
                 />
               </div>
 
@@ -242,7 +244,7 @@ export default function Dashboard() {
                 placeholder="Search groups by keywords, description, or subject..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/50 focus:border-primary transition-all"
+                className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-input text-white border border-border/50 outline-none text-xs placeholder:text-muted-foreground/50 focus:border-primary focus:shadow-glow transition-all"
               />
               {searchQuery && (
                 <button

@@ -125,7 +125,7 @@ export default function Register() {
               placeholder="Username"
               value={formData.username}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:shadow-glow transition-all"
             />
           </div>
 
@@ -138,7 +138,7 @@ export default function Register() {
               placeholder="Email Address"
               value={formData.email}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-4 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:shadow-glow transition-all"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function Register() {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full pl-11 pr-12 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl bg-input text-white border border-border/50 outline-none text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:shadow-glow transition-all"
             />
             <button
               type="button"
