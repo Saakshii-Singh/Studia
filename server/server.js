@@ -5,6 +5,8 @@ const cors = require("cors");
 require("dotenv").config();
 const Filter = require("bad-words");
 const filter = new Filter();
+const rateLimit = require("express-rate-limit");
+const mongoose = require("mongoose");
 
 // Configuration & Database connection
 const connectDB = require("./config/db");
@@ -47,6 +49,26 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Rate limiters for security & cost control
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests from this IP. Please try again after 15 minutes." }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many authentication attempts. Please try again after 15 minutes." }
+});
+
+app.use("/api/auth", authLimiter);
+app.use("/api", apiLimiter);
 
 // Connect to MongoDB
 connectDB();
@@ -135,9 +157,6 @@ io.on("connection", (socket) => {
   socket.on("timer_provide_state", ({ room, requesterId, minutes, seconds, isActive, isBreak, category }) => {
     io.to(requesterId).emit("timer_sync_event", { action: "state_reply", minutes, seconds, isActive, isBreak, category });
   });
-// Import the automatic profanity filter library
-const Filter = require("bad-words");
-const filter = new Filter();
   // 3. Room Chat Messages
   socket.on("send_message", async ({ roomId, username, text }) => {
     try {
@@ -181,3 +200,22 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Clean shutdown logic to prevent socket & DB connection leaks
+const gracefulShutdown = () => {
+  console.log("Shutting down Studia server gracefully...");
+  server.close(async () => {
+    console.log("HTTP server closed.");
+    try {
+      await mongoose.connection.close();
+      console.log("MongoDB connection closed. Exiting process.");
+      process.exit(0);
+    } catch (err) {
+      console.error("Error closing MongoDB connection:", err.message);
+      process.exit(1);
+    }
+  });
+};
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);

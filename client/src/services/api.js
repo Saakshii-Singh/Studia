@@ -25,4 +25,22 @@ API.interceptors.request.use(
   }
 );
 
+// Automatically handle token expiration (401 Unauthorized) globally
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear token and user info on session expiration
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("dev_verification_code");
+      window.dispatchEvent(new Event("studia_login_state_change"));
+      
+      // Force redirect to login screen
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default API;
