@@ -78,6 +78,8 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
   // Custom Celebratory Modals state
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [unlockedBadgesList, setUnlockedBadgesList] = useState([]);
   const [modalDetails, setModalDetails] = useState({ duration: 0, xp: 0, level: 1 });
 
   // Deep Focus Lockdown Mode States
@@ -106,6 +108,21 @@ export default function Timer({ roomName, category = "General", onSessionSaved }
         gainNode.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + 1.2);
+      } else if (type === "badge") {
+        // Gorgeous arpeggio chord: C5, E5, G5, C6 arpeggiating up
+        const freqs = [523.25, 659.25, 783.99, 1046.50];
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+          gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 1.2);
+          osc.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.12);
+          osc.stop(ctx.currentTime + idx * 0.12 + 1.2);
+        });
       } else {
         const isLevelUp = type === "levelup" || type === true;
         const osc1 = ctx.createOscillator();
@@ -372,11 +389,19 @@ useEffect(() => {
           userObj.level = response.data.userStats.level;
           userObj.studyStreak = response.data.userStats.studyStreak;
           userObj.totalStudyTime = response.data.userStats.totalStudyTime;
+          userObj.badges = response.data.userStats.badges || [];
           localStorage.setItem("user", JSON.stringify(userObj));
           window.dispatchEvent(new Event("studia_login_state_change"));
         }
         finalLevel = response.data.userStats.level;
         hasLeveledUp = response.data.userStats.leveledUp;
+
+        // Check if user unlocked a new badge during this session
+        if (response.data.userStats.newBadges && response.data.userStats.newBadges.length > 0) {
+          setUnlockedBadgesList(response.data.userStats.newBadges);
+          playChime("badge");
+          setShowBadgeModal(true);
+        }
       }
 
       setModalDetails({
@@ -391,7 +416,8 @@ useEffect(() => {
       if (hasLeveledUp) {
         playChime(true);
         setShowLevelUpModal(true);
-      } else {
+      } else if (!response.data.userStats?.newBadges || response.data.userStats.newBadges.length === 0) {
+        // Only show general session completion modal if no badge was unlocked to prevent double modal overlay clash
         setShowSessionModal(true);
       }
 
@@ -855,6 +881,76 @@ useEffect(() => {
                 className="w-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs text-white transition-all cursor-pointer"
               >
                 Re-enter Study Chambers
+              </button>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 4. Badge Unlock Celebration Modal */}
+        {showBadgeModal && unlockedBadgesList.length > 0 && (
+          <div className="fixed inset-0 bg-background/90 backdrop-blur-md z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.9 }}
+              className="glass-panel p-8 rounded-3xl w-full max-w-sm border-primary/20 shadow-glow relative text-center flex flex-col items-center overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-radial-glow opacity-30 pointer-events-none" />
+
+              <button
+                onClick={() => {
+                  setShowBadgeModal(false);
+                  setShowSessionModal(true);
+                }}
+                className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-white z-10 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {unlockedBadgesList.map((badgeId) => {
+                const details = {
+                  novice_scholar: { label: "Novice Scholar", emoji: "🎓", desc: "Logged your first study session" },
+                  deep_worker: { label: "Deep Worker", emoji: "🚀", desc: "Completed a 50+ min study session" },
+                  night_owl: { label: "Night Owl", emoji: "🦉", desc: "Studied between 12:00 AM and 4:00 AM" },
+                  unstoppable: { label: "Unstoppable", emoji: "🔥", desc: "Maintained a 7-day study streak" },
+                  focus_champion: { label: "Focus Champion", emoji: "🏆", desc: "Reached Scholar Level 5" },
+                }[badgeId] || { label: "Achievement", emoji: "✨", desc: "Unlocked a focus achievement" };
+
+                return (
+                  <div key={badgeId} className="flex flex-col items-center z-10">
+                    <span className="grid h-20 w-20 place-items-center rounded-full bg-primary/10 border border-primary/30 text-white mb-6 shadow-glow relative">
+                      <span className="text-4xl">{details.emoji}</span>
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-accent text-[8px] font-bold text-background items-center justify-center">!</span>
+                      </span>
+                    </span>
+
+                    <h2 className="text-2xl font-black tracking-tight text-white font-display uppercase tracking-widest flex items-center gap-1">
+                      <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                      <span>Badge Unlocked!</span>
+                      <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                    </h2>
+
+                    <strong className="text-lg font-black text-accent uppercase tracking-wider block mt-3">
+                      {details.label}
+                    </strong>
+
+                    <p className="text-xs text-muted-foreground mt-2 max-w-[260px] leading-relaxed">
+                      {details.desc}
+                    </p>
+                  </div>
+                );
+              })}
+
+              <button
+                onClick={() => {
+                  setShowBadgeModal(false);
+                  setShowSessionModal(true);
+                }}
+                className="w-full bg-gradient-neon py-3.5 rounded-xl font-black uppercase tracking-widest text-xs text-white shadow-glow hover:scale-[1.01] active:scale-95 transition-all mt-6 cursor-pointer z-10"
+              >
+                Claim Achievement 🌟
               </button>
             </motion.div>
           </div>

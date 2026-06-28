@@ -42,6 +42,11 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  // Leaderboard states
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardFilter, setLeaderboardFilter] = useState("alltime");
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
   // Create Group Form state
   const [roomName, setRoomName] = useState("");
   const [subject, setSubject] = useState("General");
@@ -57,8 +62,21 @@ export default function Dashboard() {
     }
   };
 
+  const fetchLeaderboard = async (filterVal) => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await API.get(`/study/leaderboard?filter=${filterVal}`);
+      setLeaderboard(res.data);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err.message);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchRooms();
+    fetchLeaderboard(leaderboardFilter);
 
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -76,7 +94,7 @@ export default function Dashboard() {
     };
     window.addEventListener("studia_login_state_change", handleLoginChange);
     return () => window.removeEventListener("studia_login_state_change", handleLoginChange);
-  }, []);
+  }, [leaderboardFilter]);
 
   const createRoom = async (e) => {
     e.preventDefault();
@@ -132,7 +150,7 @@ export default function Dashboard() {
       {/* Main Grid Container */}
       <div className="w-full max-w-6xl px-6 grid gap-8 md:grid-cols-[1.1fr_2.5fr] items-start mt-4">
         
-        {/* Left Column: Profile Card & Upgraded Study Group Form */}
+        {/* Left Column: Profile Card, Badges, Leaderboard, & Upgraded Study Group Form */}
         <div className="flex flex-col gap-6">
           {/* Stats Greeting */}
           <div className="glass-panel p-6 rounded-3xl relative overflow-hidden border-primary/15">
@@ -149,6 +167,139 @@ export default function Dashboard() {
                 <span>Level {user.level || 1} Focus Scholar</span>
               </div>
             )}
+          </div>
+
+          {/* Scholar Badges Panel */}
+          {user && (
+            <div className="glass-panel p-6 rounded-3xl border-primary/15 flex flex-col gap-4">
+              <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+                <Award className="h-4.5 w-4.5 text-primary" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                  Scholar Badges
+                </h3>
+              </div>
+              <div className="grid grid-cols-5 gap-3">
+                {[
+                  { id: "novice_scholar", label: "Novice Scholar", emoji: "🎓", desc: "Logged your first study session" },
+                  { id: "deep_worker", label: "Deep Worker", emoji: "🚀", desc: "Completed a 50+ min study session" },
+                  { id: "night_owl", label: "Night Owl", emoji: "🦉", desc: "Studied between 12:00 AM and 4:00 AM" },
+                  { id: "unstoppable", label: "Unstoppable", emoji: "🔥", desc: "Maintained a 7-day study streak" },
+                  { id: "focus_champion", label: "Focus Champion", emoji: "🏆", desc: "Reached Scholar Level 5" },
+                ].map((badge) => {
+                  const isUnlocked = user.badges && user.badges.includes(badge.id);
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`relative group flex flex-col items-center justify-center p-3.5 rounded-2xl border transition-all ${
+                        isUnlocked
+                          ? "bg-primary/10 border-primary/30 text-white"
+                          : "bg-muted/30 border-border/20 text-muted-foreground/30 opacity-40 filter grayscale"
+                      }`}
+                      title={`${badge.label}: ${badge.desc}`}
+                    >
+                      <span className="text-xl mb-1">{badge.emoji}</span>
+                      
+                      {/* CSS Tooltip */}
+                      <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-30">
+                        <div className="bg-black/95 text-white text-[10px] p-2.5 rounded-xl shadow-glow border border-border/45 w-44 text-center leading-normal">
+                          <p className="font-extrabold text-primary mb-0.5">{badge.label}</p>
+                          <p className="text-[9px] text-muted-foreground">{badge.desc}</p>
+                          <p className={`text-[8px] font-black uppercase mt-1.5 ${isUnlocked ? 'text-emerald-400' : 'text-accent'}`}>
+                            {isUnlocked ? 'Unlocked ✓' : 'Locked'}
+                          </p>
+                        </div>
+                        <div className="w-2 h-2 bg-black/95 rotate-45 -mt-1 border-r border-b border-border/45" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Leaderboard Panel */}
+          <div className="glass-panel p-6 rounded-3xl border-primary/15 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <div className="flex items-center gap-2">
+                <Award className="h-4.5 w-4.5 text-accent animate-pulse" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                  Top Scholars
+                </h3>
+              </div>
+              
+              {/* Leaderboard Tabs */}
+              <div className="flex gap-1 bg-input/50 p-1 rounded-xl border border-border/30">
+                {["daily", "weekly", "alltime"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setLeaderboardFilter(f)}
+                    className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                      leaderboardFilter === f
+                        ? "bg-primary text-background font-black"
+                        : "text-muted-foreground hover:text-white"
+                    }`}
+                  >
+                    {f === "alltime" ? "All" : f === "weekly" ? "Week" : "Day"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scores List */}
+            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+              {leaderboardLoading ? (
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  Syncing scores...
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  No sessions logged in this timeframe.
+                </div>
+              ) : (
+                leaderboard.map((row, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                      user && row.username === user.username
+                        ? "bg-primary/15 border-primary/45"
+                        : "bg-muted/10 border-border/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Rank Indicator */}
+                      <span className={`w-5 h-5 shrink-0 rounded-md font-black text-[10px] flex items-center justify-center ${
+                        row.rank === 1 ? 'bg-amber-500 text-background font-extrabold shadow-glow' :
+                        row.rank === 2 ? 'bg-slate-300 text-background' :
+                        row.rank === 3 ? 'bg-amber-700 text-white' :
+                        'bg-input text-muted-foreground'
+                      }`}>
+                        {row.rank}
+                      </span>
+                      
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-white leading-tight truncate max-w-[110px]">
+                          {row.username}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">
+                          Lvl {row.level} Scholar
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex flex-col items-end shrink-0">
+                      <span className="text-xs font-bold text-accent font-mono leading-none">
+                        {row.hours}h
+                      </span>
+                      {row.streak > 0 && (
+                        <span className="text-[8px] font-bold text-rose-400 mt-0.5">
+                          🔥 {row.streak}d
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* Upgraded Group Creation Form */}

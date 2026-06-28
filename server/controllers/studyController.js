@@ -70,6 +70,47 @@ exports.logStudySession = async (req, res) => {
       }
       user.lastStudyDate = now;
 
+      // Badge / Achievements logic
+      const newBadges = [];
+      const userBadges = user.badges || [];
+
+      // 1. Novice Scholar
+      if (!userBadges.includes("novice_scholar")) {
+        newBadges.push("novice_scholar");
+        userBadges.push("novice_scholar");
+      }
+
+      // 2. Deep Worker
+      if (Number(duration) >= 50 && !userBadges.includes("deep_worker")) {
+        newBadges.push("deep_worker");
+        userBadges.push("deep_worker");
+      }
+
+      // 3. Night Owl: study Hour is between 12:00 AM and 4:00 AM (0 to 3 inclusive)
+      const studyHour = now.getHours();
+      if (studyHour >= 0 && studyHour < 4 && !userBadges.includes("night_owl")) {
+        newBadges.push("night_owl");
+        userBadges.push("night_owl");
+      }
+
+      // 4. Unstoppable
+      if (user.studyStreak >= 7 && !userBadges.includes("unstoppable")) {
+        newBadges.push("unstoppable");
+        userBadges.push("unstoppable");
+      }
+
+      // 5. Focus Champion
+      if (user.level >= 5 && !userBadges.includes("focus_champion")) {
+        newBadges.push("focus_champion");
+        userBadges.push("focus_champion");
+      }
+
+      if (newBadges.length > 0) {
+        user.badges = userBadges;
+        // Mark user.badges as modified because it's a mixed type or array in Mongoose sometimes
+        user.markModified("badges");
+      }
+
       await user.save();
 
       userStats = {
@@ -77,6 +118,8 @@ exports.logStudySession = async (req, res) => {
         xp: user.xp,
         level: user.level,
         studyStreak: user.studyStreak,
+        badges: user.badges,
+        newBadges,
         leveledUp,
       };
     } else {
@@ -153,21 +196,70 @@ exports.getStudyStats = async (req, res) => {
 };
 
 exports.getLeaderboard = async (req, res) => {
+  const { filter = "alltime" } = req.query;
+
   try {
-    const topUsers = await User.find()
-      .select("username xp studyStreak totalStudyTime")
-      .sort({ xp: -1 })
-      .limit(10);
+    if (filter === "daily" || filter === "weekly") {
+      const hoursAgo = filter === "daily" ? 24 : 168;
+      const sinceDate = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
 
-    const leaderboard = topUsers.map((user, idx) => ({
-      rank: idx + 1,
-      username: user.username,
-      level: Math.floor(Math.sqrt(user.xp / 100)) + 1,
-      streak: user.studyStreak || 0,
-      hours: parseFloat(((user.totalStudyTime || 0) / 60).toFixed(1)),
-    }));
+      const aggregated = await StudySession.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: sinceDate },
+            userId: { $exists: true, $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: "$userId",
+            totalMinutes: { $sum: "$duration" }
+          }
+        },
+        {
+          $sort: { totalMinutes: -1 }
+        },
+        {
+          $limit: 10
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $unwind: "$user"
+        }
+      ]);
 
-    res.json(leaderboard);
+      const leaderboard = aggregated.map((item, idx) => ({
+        rank: idx + 1,
+        username: item.user.username,
+        level: Math.floor(Math.sqrt((item.user.xp || 0) / 100)) + 1,
+        streak: item.user.studyStreak || 0,
+        hours: parseFloat((item.totalMinutes / 60).toFixed(1)),
+      }));
+
+      return res.json(leaderboard);
+    } else {
+      const topUsers = await User.find()
+        .select("username xp studyStreak totalStudyTime")
+        .sort({ xp: -1 })
+        .limit(10);
+
+      const leaderboard = topUsers.map((user, idx) => ({
+        rank: idx + 1,
+        username: user.username,
+        level: Math.floor(Math.sqrt((user.xp || 0) / 100)) + 1,
+        streak: user.studyStreak || 0,
+        hours: parseFloat(((user.totalStudyTime || 0) / 60).toFixed(1)),
+      }));
+
+      return res.json(leaderboard);
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

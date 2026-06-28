@@ -29,6 +29,35 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
 
+    level: {
+      type: Number,
+      default: 1,
+    },
+
+    totalStudyTime: {
+      type: Number,
+      default: 0,
+    },
+
+    studyStreak: {
+      type: Number,
+      default: 0,
+    },
+
+    lastStudyDate: {
+      type: Date,
+    },
+
+    dailyStudyGoal: {
+      type: Number,
+      default: 120,
+    },
+
+    badges: {
+      type: [String],
+      default: [],
+    },
+
     isVerified: {
       type: Boolean,
       default: false,

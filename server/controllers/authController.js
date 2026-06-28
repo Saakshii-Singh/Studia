@@ -110,6 +110,10 @@ exports.register = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         xp: user.xp,
+        level: user.level || 1,
+        totalStudyTime: user.totalStudyTime || 0,
+        studyStreak: user.studyStreak || 0,
+        badges: user.badges || [],
         isVerified: user.isVerified
       },
       ...(!isRealEmailSent ? { devCode: verificationCode } : {})
