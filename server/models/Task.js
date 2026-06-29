@@ -25,10 +25,10 @@ const taskSchema = new mongoose.Schema(
       enum: ["Low", "Medium", "High"],
       default: "Medium",
     },
-  },
-  {
-    timestamps: true,
   }
 );
+
+// Optimize retrieval by indexing the user ID field
+taskSchema.index({ userId: 1 });
 
 module.exports = mongoose.model("Task", taskSchema);

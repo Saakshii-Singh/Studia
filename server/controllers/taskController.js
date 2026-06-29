@@ -4,7 +4,7 @@ const Task = require("../models/Task");
 // @route   GET /api/tasks
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const tasks = await Task.find({ userId: req.user._id }).sort({ completed: 1, createdAt: -1 });
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: error.message });

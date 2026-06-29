@@ -35,6 +35,23 @@ export default function Room() {
   const [showNickModal, setShowNickModal] = useState(false);
   const [guestNick, setGuestNick] = useState("");
 
+  // Refs to maintain fresh data in socket connection listeners
+  const usernameRef = useRef(username);
+  const avatarColorRef = useRef(avatarColor);
+  const focusStatusRef = useRef(focusStatus);
+
+  useEffect(() => {
+    usernameRef.current = username;
+  }, [username]);
+
+  useEffect(() => {
+    avatarColorRef.current = avatarColor;
+  }, [avatarColor]);
+
+  useEffect(() => {
+    focusStatusRef.current = focusStatus;
+  }, [focusStatus]);
+
   // Ambient sound system refs & playing states
  const [playingAmbient, setPlayingAmbient] = useState({ rain: false, lofi: false, cafe: false, piano: false, fire: false, soft: false });
 const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano: 0.3, fire: 0.3, soft: 0.3 });
@@ -109,10 +126,24 @@ const [volumes, setVolumes] = useState({ rain: 0.3, lofi: 0.3, cafe: 0.3, piano:
       setMessages((prev) => [...prev, data]);
     });
 
+    // Reconnection listener to auto-rejoin the co-study room
+    const handleReconnect = () => {
+      console.log("Socket reconnected. Rejoining co-study room...");
+      socket.emit("join_study_room", {
+        room: id,
+        nickname: usernameRef.current,
+        focus: focusStatusRef.current,
+        avatar: avatarColorRef.current,
+        xp: 0,
+      });
+    };
+    socket.on("connect", handleReconnect);
+
     return () => {
       socket.emit("leave_study_room", { room: id });
       socket.off("room_users_list");
       socket.off("new_message");
+      socket.off("connect", handleReconnect);
       
       // Stop all ambient focus tracks on leaving the room
            // Stop all ambient focus tracks on leaving the room
