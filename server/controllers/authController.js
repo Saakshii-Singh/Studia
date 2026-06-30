@@ -70,6 +70,26 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    // Validate input formats & lengths
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({
+        message: "Username must be at least 3 characters long",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address",
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
